@@ -1,7 +1,10 @@
 Pkg.add("CUSPARSE")
+Pkg.add("CUDArt")
 using CUSPARSE
 
-Pkg.add("CUDAnative")
+Pkg.build("CUDAnative")
+Pkg.build("CUDAdrv")
+Pkg.add("CuArrays")
 
 using CUDAdrv, CUDAnative, CuArrays
 using Test
