@@ -1,8 +1,12 @@
+#/home/lik/julia/julia-0.7.0/bin/julia
 Pkg.add("CUSPARSE")
+Pkg.build("CUSPARSE")
 Pkg.add("CUDArt")
+Pkg.build("CUDArt")
 using CUSPARSE
 
 Pkg.build("CUDAnative")
+Pkg.add("CUDAdrv")
 Pkg.build("CUDAdrv")
 Pkg.add("CuArrays")
 
@@ -16,8 +20,8 @@ end
 
 a = round.(rand(Float32, (300, 4)) * 100)
 b = round.(rand(Float32, (300, 4)) * 100)
-d_a = CuArray(a)
-d_b = CuArray(b)
+d_a = CuArrays.CuArray(a)
+d_b = CuArrays.CuArray(b)
 d_c = similar(d_a)  # output array
 
 # run the kernel and fetch results
