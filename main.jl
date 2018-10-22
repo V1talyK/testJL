@@ -8,13 +8,18 @@ b=d["b"];
 @time x= A\b;
 
 @time LU=lufact(A);
+@time CL=cholfact(-A);
+
 L = LU[:L];
 Rs = LU[:Rs];
 p = LU[:p];
 U = LU[:U];
 @time y=L\view(Rs.*b,p);
 @time x1=U\y;
-
+@time A_ldiv_B!(x,LU,b)
+@time x1 = A_ldiv_B!(CL,b)
+y = CL[:L]\b
+x1 = CL[:L]'\y
 x[1]
 x1[LU[:p].==1][1]
 
