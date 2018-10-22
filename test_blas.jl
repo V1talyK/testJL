@@ -8,6 +8,7 @@ A[end]=A[end]-1;
 B = rand(n);
 B[1]=100;
 B[end]=10;
+@time x = (-A)\B;
 @time x = A\B;
 
 F = lufact(A);
@@ -22,3 +23,7 @@ y=L\B[p];
 x1 =U\y;
 x2=copy(x1);
 x2[p]=x1;
+
+
+@time CH = cholfact(-A);
+@time x1 = CH\B;
