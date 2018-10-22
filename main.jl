@@ -3,12 +3,19 @@ r=dirname(Base.source_path());
 d = JLD.load(joinpath(r,"myfile.jld"));
 A=d["A"];
 b=d["b"];
+mA = -A;
 
-
-@time x= A\b;
+@time x = A\b;
+@time x1 = mA\b;
 
 @time LU=lufact(A);
+@time for i=1:50
+    x3=LU\b;
+end
 @time CL=cholfact(-A);
+@time for i=1:50
+    x2 = CL\b;
+end
 
 L = LU[:L];
 Rs = LU[:Rs];
