@@ -17,14 +17,13 @@ end
 
 function fun3(Ab,an,j)
     local A1, a1
-    A1 = Ab[1];
+    A1 = -Ab[1];
     for i=1:10
         #display(i)
-        A = -Ab[1]
-        display(typeof(A))
-        display(issymmetric(-Ab[1]))
-        CL=cholfact(-A1);
-        #an[:]= -(CL\Ab[2])
+        #display(typeof(A))
+        #display(issymmetric(-Ab[1]))
+        CL=cholfact(A1);
+        an[:]= -(CL\Ab[2])
         #an[:]=LU\Ab[2];
     end
 end
@@ -50,15 +49,24 @@ iN=Vector(8); for i=1:8 iN[i]=i; end;
 @time pmap(fun2,Ab;distributed=true)
 @time pmap(fun2,Ab)
 
+Ab2 = copy(Ab)
+an2 = copy(an)
+
+ai = NaN*zeros(Int32,8)
 an = Vector(8); for i=1:8 an[i]=zeros(length(b)); end;
-@time @inbounds Threads.@threads for i=1:2
-    display(Threads.threadid())
-    if Threads.threadid()==1
-        fun3(Ab[i],an[i],i);
-    end
-    if Threads.threadid()==2
-        fun3(Ab[i],an[i],i);
-    end
+@time @inbounds Threads.@threads for i=1:8
+    ai[i] = Threads.threadid()
+    #if Threads.threadid()==1
+    sleep(0.001)
+    fun3(Ab[i],an[i],i);
+    #end
+    #if Threads.threadid()==2
+        #fun3(Ab2[i],an2[i],i);
+    #end
+end
+
+@time for i=1:8
+    fun3(Ab[i],an[i],i);
 end
 
 function g(a, n)
