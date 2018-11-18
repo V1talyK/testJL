@@ -10,7 +10,7 @@ function fun2(Ab,an,j)
     for i=1:10
         #display(i)
         APLU=lufact(Ab[1]);
-        A_ldiv_B!(an, APLU, Ab[2])
+        A_ldiv_B!(APLU, Ab[2])
         #an[:]=LU\Ab[2];
     end
 end
@@ -23,7 +23,7 @@ function fun3(Ab,an,j)
         #display(typeof(A))
         #display(issymmetric(-Ab[1]))
         CL=cholfact(A1);
-        an[:]= -(CL\Ab[2])
+        #an[:]= -(CL\Ab[2])
         #an[:]=LU\Ab[2];
     end
 end
@@ -53,20 +53,22 @@ Ab2 = copy(Ab)
 an2 = copy(an)
 
 ai = NaN*zeros(Int32,8)
-an = Vector(8); for i=1:8 an[i]=zeros(length(b)); end;
-@time @inbounds Threads.@threads for i=1:8
+an = Vector(8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
+at = Vector(8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
+@time Threads.@threads for i=1:8
     ai[i] = Threads.threadid()
     #if Threads.threadid()==1
-    sleep(0.001)
-    fun3(Ab[i],an[i],i);
+    #sleep(0.001)
+    fun2(Ab[i],an[i],i);
     #end
     #if Threads.threadid()==2
         #fun3(Ab2[i],an2[i],i);
     #end
+    display(ai[i])
 end
 
 @time for i=1:8
-    fun3(Ab[i],an[i],i);
+    fun2(Ab[i],an[i],i);
 end
 
 function g(a, n)
@@ -86,3 +88,4 @@ function tmap(f,arg...)
     end
     return y
 end
+ccall((:openblas_get_num_threads64_, Base.libblas_name), Cint, ())
