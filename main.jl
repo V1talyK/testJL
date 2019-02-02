@@ -2,6 +2,13 @@ using JLD
 r=dirname(Base.source_path());
 d = JLD.load(joinpath(r,"myfile.jld"));
 A=d["A"];
+A = SparseArrays.sparse(c, A.rowval, A.nzval)
+c = Vector(undef,length(A.rowval))
+for i=1:length(A.colptr)-1
+    ind = convert(Array{Int64,1},A.colptr[i]:(A.colptr[i+1]-1))
+    c[ind] = i*ones(Int64,length(ind));
+end
+c = vcat(c...)
 b=d["b"];
 mA = -A;
 
