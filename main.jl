@@ -1,25 +1,25 @@
-using JLD
+using JLD, SparseArrays
 r=dirname(Base.source_path());
 d = JLD.load(joinpath(r,"myfile.jld"));
 A=d["A"];
-A = SparseArrays.sparse(c, A.rowval, A.nzval)
+
 c = Vector(undef,length(A.rowval))
 for i=1:length(A.colptr)-1
     ind = convert(Array{Int64,1},A.colptr[i]:(A.colptr[i+1]-1))
     c[ind] = i*ones(Int64,length(ind));
 end
-c = vcat(c...)
+A = SparseArrays.sparse(c, A.rowval, A.nzval)
 b=d["b"];
 mA = -A;
 
 @time x = A\b;
 @time x1 = mA\b;
 
-@time LU=lufact(A);
-@time for i=1:50
-    x3=LU\b;
+@time LUf=LinearAlgebra.lu(A);
+@time for i=1:1
+    x3=LUf\b;
 end
-@time CL=cholfact(-A);
+@time CL=LinearAlgebra.Cholesky(-A);
 @time for i=1:50
     x2 = CL\b;
 end
