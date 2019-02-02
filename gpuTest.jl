@@ -10,8 +10,10 @@ Pkg.add("CUDAdrv")
 Pkg.build("CUDAdrv")
 Pkg.add("CuArrays")
 
-using CUDAdrv, CUDAnative, CuArrays
+using CUDAdrv, CUDAnative, CuArrays, CuArrays.CUSPARSE
 using Test
+
+cuA =  CuArrays.CUSPARSE.CuSparseMatrixCSC(A);
 
 function kernel_vadd(a, b, c)
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
