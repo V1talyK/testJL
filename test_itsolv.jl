@@ -1,13 +1,23 @@
 using IterativeSolvers, Preconditioners, IncompleteLU
 
-@time x0 = A\b;
+@time for i=1:50
+    x0 = A\b;
+end
+
 @time x1 = IterativeSolvers.gmres(A, b);
 @time x1 = IterativeSolvers.gmres(-A, b; Pl = p.L);
 x11 = copy(x1)
 @time IterativeSolvers.gmres!(x0, A, b; Pl = p.L);
 
 @time x2 = IterativeSolvers.cg(-A, -b);
-@time x2 = IterativeSolvers.cg(A, b; Pl = LUi);
+@time for i=1:50
+    x2 = IterativeSolvers.cg(A, b; Pl = LUi);
+end
+
+@time for i=1:50
+    x2 = IterativeSolvers.cg(A, b; Pl = LUf);
+end
+
 @time x2 = IterativeSolvers.cg(A, b; Pl = LUf);
 x21=zeros(Float64,length(x2));
 x21=x0+20*rand(Float64,length(x2));
@@ -19,7 +29,9 @@ x21=x0+20*rand(Float64,length(x2));
 @time x3 = minres(A, b; Pl = p.L)
 
 @time x4 = bicgstabl(A, b, 1; Pl = LUf);
-@time x4 = bicgstabl(A, b, 1; Pl = LUi);
+@time for i=1:50
+    x4 = bicgstabl(A, b, 1; Pl = LUi);
+end
 x44 = copy(x4)#+fill(1,length(x4[1]))
 @time bicgstabl!(x44, A, b, 2 ; Pl = LU);
 
