@@ -3,6 +3,9 @@ using IterativeSolvers, Preconditioners, IncompleteLU
 @time for i=1:50
     x0 = A\b;
 end
+@time for i=1:50
+    x0lu = LUf\b;
+end
 
 @time x1 = IterativeSolvers.gmres(A, b);
 @time x1 = IterativeSolvers.gmres(-A, b; Pl = p.L);
@@ -28,12 +31,12 @@ x21=x0+20*rand(Float64,length(x2));
 @time x3 = minres(A, b)
 @time x3 = minres(A, b; Pl = p.L)
 
-@time x4 = bicgstabl(A, b, 1; Pl = LUf);
+@time x4 = bicgstabl(A, b, 1; Pl = LUi);
 @time for i=1:50
     x4 = bicgstabl(A, b, 1; Pl = LUi);
 end
 x44 = copy(x4)#+fill(1,length(x4[1]))
-@time bicgstabl!(x44, A, b, 2 ; Pl = LU);
+@time bicgstabl!(x44, A, b, 1 ; Pl = LUi);
 
 sum(abs.(x0-x1))
 sum(abs.(x0-x2))
@@ -41,7 +44,7 @@ sum(abs.(x0-x4))
 
 @time p = CholeskyPreconditioner(-A, 2)
 @time p = AMGPreconditioner(A)
-@time LUi = ilu(A, τ = 0.1)
+@time LUi = ilu(A, τ = 0.5)
 
 x6 = @time jacobi(A, b; maxiter=5000)
 sum(abs.(x0-x6))
