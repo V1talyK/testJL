@@ -6,7 +6,7 @@ using IterativeSolvers, Preconditioners, IncompleteLU
 x11 = copy(x1)
 @time IterativeSolvers.gmres!(x0, A, b; Pl = p.L);
 
-@time x2 = IterativeSolvers.cg(-A, -b);
+@time x2 = IterativeSolvers.cg(A, b);
 @time x2 = IterativeSolvers.cg(A, b; Pl = LUi);
 @time x2 = IterativeSolvers.cg(A, b; Pl = LUf);
 x21=zeros(Float64,length(x2));
@@ -14,10 +14,10 @@ x21=x0+20*rand(Float64,length(x2));
 @time IterativeSolvers.cg!(x21, A, b; Pl = LU);
 
 
-p = CholeskyPreconditioner(A, 2)
+p = CholeskyPreconditioner(-A, 2)
 
 @time x3 = minres(A, b)
-@time x3 = minres(A, b; Pl = p.L)
+@time x3 = minres(A, b; Pl = LUi.L)
 
 @time x4 = bicgstabl(A, b, 1; Pl = LUf);
 @time x4 = bicgstabl(A, b, 1; Pl = LUi);
@@ -32,7 +32,7 @@ sum(abs.(x0-x4))
 @time p = AMGPreconditioner(A)
 @time LUi = ilu(A, τ = 0.1)
 
-x6 = @time jacobi(A, b; maxiter=5000)
+x6 = @time jacobi(A, b; maxiter=1000, Pl = LUi)
 sum(abs.(x0-x6))
 
 @time x7 = gauss_seidel(A, b; maxiter=1000)
