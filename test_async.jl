@@ -57,7 +57,7 @@ an2 = copy(an)
 ai = NaN*zeros(Int32,8)
 an = Vector(undef,8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
 at = Vector(undef,8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
-@time @inbounds Threads.@threads for i=1:4
+@time @inbounds Threads.@threads for i=1:6
     ai[i] = Threads.threadid()
     #if Threads.threadid()==1
     #sleep(0.001)

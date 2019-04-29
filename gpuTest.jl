@@ -12,7 +12,7 @@ Pkg.add("CuArrays")
 
 using CUDAdrv, CUDAnative, CuArrays, CuArrays.CUSPARSE
 using Test
-
+using CuArrays, CuArrays.CUSPARSE
 cuA =  CuArrays.CUSPARSE.CuSparseMatrixCSC(A);
 
 function kernel_vadd(a, b, c)
@@ -50,4 +50,4 @@ xs_cpu = collect(xs)
 
 
 @time xs*ys;
-@time xs.\ys;
+@time xs\ys;

@@ -12,7 +12,13 @@ end
 x11 = copy(x1)
 @time IterativeSolvers.gmres!(x0, A, b; Pl = p.L);
 
-@time x2 = IterativeSolvers.cg(-A, -b);
+@time x2 = IterativeSolvers.cg(A, b);
+@time IterativeSolvers.cg!(x2,A, b);
+
+cux2=CuArrays.CuArray(rand(length(x2)))
+
+@time IterativeSolvers.cg!(cux2,cuA, d_b);
+
 @time for i=1:50
     x2 = IterativeSolvers.cg(A, b; Pl = LUi);
 end
@@ -26,9 +32,9 @@ x21=zeros(Float64,length(x2));
 x21=x0+20*rand(Float64,length(x2));
 @time IterativeSolvers.cg!(x21, A, b; Pl = LU);
 
+@time cuA*d_b;
 
-
-@time x3 = minres(A, b)
+@time x3 = minres(cuA, d_b)
 @time x3 = minres(A, b; Pl = p.L)
 
 @time x4 = bicgstabl(A, b, 1; Pl = LUi);
