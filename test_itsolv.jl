@@ -34,8 +34,10 @@ x21=x0+20*rand(Float64,length(x2));
 
 @time cuA*d_b;
 
-@time x3 = minres(cuA, d_b)
-@time x3 = minres(A, b; Pl = p.L)
+p = CholeskyPreconditioner(-A, 2)
+
+@time x3 = minres(A, b)
+@time x3 = minres(A, b; Pl = LUi.L)
 
 @time x4 = bicgstabl(A, b, 1; Pl = LUi);
 @time for i=1:50
@@ -44,7 +46,7 @@ end
 x44 = copy(x4)#+fill(1,length(x4[1]))
 @time bicgstabl!(x44, A, b, 1 ; Pl = LUi);
 
-sum(abs.(x0-x1))
+sum(abs.(x0-x11))
 sum(abs.(x0-x2))
 sum(abs.(x0-x4))
 
@@ -52,7 +54,7 @@ sum(abs.(x0-x4))
 @time p = AMGPreconditioner(A)
 @time LUi = ilu(A, τ = 0.5)
 
-x6 = @time jacobi(A, b; maxiter=5000)
+x6 = @time jacobi(A, b; maxiter=1000, Pl = LUi)
 sum(abs.(x0-x6))
 
 @time x7 = gauss_seidel(A, b; maxiter=1000)
