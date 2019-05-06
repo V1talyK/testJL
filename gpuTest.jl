@@ -7,7 +7,7 @@ using CUSPARSE
 
 Pkg.build("CUDAnative")
 Pkg.add("CUDAdrv")
-Pkg.build("CUDAdrv")
+Pkg.rm("CUDAdrv")
 Pkg.add("CuArrays")
 
 using CUDAdrv, CUDAnative, CuArrays, CuArrays.CUSPARSE
