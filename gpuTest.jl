@@ -5,9 +5,11 @@ Pkg.add("CUDArt")
 Pkg.build("CUDArt")
 using CUSPARSE
 
+using Pkg
+
 Pkg.build("CUDAnative")
 Pkg.add("CUDAdrv")
-Pkg.rm("CUDAdrv")
+Pkg.build("CUDAdrv")
 Pkg.add("CuArrays")
 
 using CUDAdrv, CUDAnative, CuArrays, CuArrays.CUSPARSE
