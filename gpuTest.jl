@@ -73,3 +73,4 @@ icfA = CuArrays.CUSPARSE.ic02(cuA,index);
 @time cuA*cuB
 nj = iluA-cuA;
 sum(nj)
+1
