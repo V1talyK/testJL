@@ -9,8 +9,10 @@ for i=1:length(A.colptr)-1
     c[ind] = i*ones(Int64,length(ind));
 end
 A = SparseArrays.sparse(c, A.rowval, A.nzval)
+#A = convert(SparseArrays.SparseMatrixCSR{Float64},A)
 b=d["b"];
 mA = -A;
+
 
 @time x = A\b;
 @time x1 = mA\b;

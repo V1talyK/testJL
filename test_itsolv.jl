@@ -1,8 +1,10 @@
-using IterativeSolvers, Preconditioners, IncompleteLU
+using IterativeSolvers, Preconditioners, IncompleteLU, LinearAlgebra
+LinearAlgebra.BLAS.set_num_threads(1) #set_num_threads
 
 @time for i=1:50
     x0 = A\b;
 end
+@time x0 = A\b;
 @time for i=1:50
     x0lu = LUf\b;
 end
@@ -15,12 +17,18 @@ x11 = copy(x1)
 @time x2 = IterativeSolvers.cg(A, b);
 @time IterativeSolvers.cg!(x2,A, b);
 
-cux2=CuArrays.CuArray(rand(length(x2)))
+cux2=CuArrays.CuArray(0*rand(length(x2)))
 
-@time IterativeSolvers.cg!(cux2,cuA, d_b);
+@time IterativeSolvers.cg!(cux2,cuA, cuB);
+@time cux3 = IterativeSolvers.cg(cuA, cuB);
+
+cuL =  CuArrays.CUSPARSE.CuSparseMatrixCSC(LUi.L);
+cux3 = IterativeSolvers.cg(cuA, cuB; Pl = cuL);
 
 @time for i=1:50
-    x2 = IterativeSolvers.cg(A, b; Pl = LUi);
+    #x2 = IterativeSolvers.cg(A, b; Pl = LUi);
+    #x2 = IterativeSolvers.cg(A, b);
+    cux3 = IterativeSolvers.cg(cuA, cuB; Pl = iluA.L);
 end
 
 @time for i=1:50
@@ -34,12 +42,13 @@ x21=x0+20*rand(Float64,length(x2));
 
 @time cuA*d_b;
 
-p = CholeskyPreconditioner(-A, 2)
+p = CholeskyPreconditioner(-cuA, 2)
 
 @time x3 = minres(A, b)
 @time x3 = minres(A, b; Pl = LUi.L)
 
 @time x4 = bicgstabl(A, b, 1; Pl = LUi);
+@time x4 = bicgstabl(cuA, cuB, 1);
 @time for i=1:50
     x4 = bicgstabl(A, b, 1; Pl = LUi);
 end
