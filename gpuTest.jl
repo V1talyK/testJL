@@ -14,7 +14,7 @@ Pkg.build("CuArrays")
 using CUDAdrv, CUDAnative, CuArrays, CuArrays.CUSPARSE
 using Test
 using CuArrays, CuArrays.CUSPARSE
-cuA =  CuArrays.CUSPARSE.CuSparseMatrixCSR(abs.(A));
+cuA =  CuArrays.CUSPARSE.CuSparseMatrixCSR(A);
 cuB = CuArrays.CuArray(b)
 x = CuArrays.CuArray(zeros(length(b)));
 
