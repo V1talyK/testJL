@@ -9,9 +9,11 @@ function fun2(Ab,an,j)
     local x
     for i=1:10
         #display(i)
-        APLU=lufact(Ab[1]);
-        A_ldiv_B!(APLU, Ab[2])
+        #APLU=LinearAlgebra.lufact(Ab[1]);
+        #A_ldiv_B!(APLU, Ab[2])
         #an[:]=LU\Ab[2];
+        #Ab[1]\Ab[2]
+        IterativeSolvers.cg(Ab[1], Ab[2])
     end
 end
 
@@ -30,12 +32,12 @@ end
 
 A=rand(1000,1000);
 b = rand(1000)
-Av=Vector(8); for i=1:8 Av[i]=A; end;
-bv=Vector(8); for i=1:8 bv[i]=b; end;
-Ab=Vector(8); for i=1:8 Ab[i]=[A,b]; end;
+Av=Vector(undef,8); for i=1:8 Av[i]=A; end;
+bv=Vector(undef,8); for i=1:8 bv[i]=b; end;
+Ab=Vector(undef,8); for i=1:8 Ab[i]=[A,b]; end;
 
 @time fun1(A,b)
-iN=Vector(8); for i=1:8 iN[i]=i; end;
+iN=Vector(undef,8); for i=1:8 iN[i]=i; end;
 
 @time map(fun1,Ab,an,iN)
 @time map(fun2,Ab,an,iN)
@@ -53,9 +55,9 @@ Ab2 = copy(Ab)
 an2 = copy(an)
 
 ai = NaN*zeros(Int32,8)
-an = Vector(8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
-at = Vector(8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
-@time Threads.@threads for i=1:8
+an = Vector(undef,8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
+at = Vector(undef,8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
+@time @inbounds Threads.@threads for i=1:6
     ai[i] = Threads.threadid()
     #if Threads.threadid()==1
     #sleep(0.001)
@@ -64,7 +66,7 @@ at = Vector(8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
     #if Threads.threadid()==2
         #fun3(Ab2[i],an2[i],i);
     #end
-    display(ai[i])
+    #println(i)
 end
 
 @time for i=1:8

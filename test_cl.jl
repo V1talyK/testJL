@@ -30,3 +30,6 @@ for dev in CLArrays.devices()
     CLArrays.init(dev)
     x = zeros(CLArray{Float32}, 5, 5) # create a CLArray on device `dev`
 end
+
+
+Pkg.build("CLBlast")
