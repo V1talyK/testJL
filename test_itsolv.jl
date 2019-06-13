@@ -9,7 +9,10 @@ end
 x11 = copy(x1)
 @time IterativeSolvers.gmres!(x0, A, b; Pl = p.L);
 
-@time x2 = IterativeSolvers.cg(-A, -b);
+@time x2 = IterativeSolvers.cg(A, b);
+cuA =  CuSparseMatrixCSC(A);
+cuB = cu(b);
+@time x2 = IterativeSolvers.cg(cuA, cuB);
 @time for i=1:50
     x2 = IterativeSolvers.cg(A, b; Pl = LUi);
 end
