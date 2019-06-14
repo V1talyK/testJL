@@ -15,13 +15,25 @@ mA = -A;
 
 
 @time x = A\b;
+
+@time begin
+    for i=1:100
+        ml = ruge_stuben(A);
+        solve(ml, b, tol=1e-5);
+    end
+end
+
+@time p = aspreconditioner(ml)
+@time c = cg(A, b, Pl = p)
+@time solve(ml, b, tol=1e-5);
+
 @time x1 = mA\b;
 
 @time LUf=LinearAlgebra.lu(A);
 @time for i=1:1
     x3=LUf\b;
 end
-@time CL=LinearAlgebra.Cholesky(-A);
+@time CL=LinearAlgebra.Cholesky(A);
 @time for i=1:50
     x2 = CL\b;
 end

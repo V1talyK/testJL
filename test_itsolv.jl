@@ -17,6 +17,10 @@ x11 = copy(x1)
 @time x2 = IterativeSolvers.cg(A, b);
 @time IterativeSolvers.cg!(x2,A, b);
 
+@time for i=1:50
+    x3 = IterativeSolvers.cg(A, b; Pl = LUi);
+end
+
 cux2=CuArrays.CuArray(0*rand(length(x2)))
 
 @time IterativeSolvers.cg!(cux2,cuA, cuB);
@@ -61,7 +65,7 @@ sum(abs.(x0-x4))
 
 @time p = CholeskyPreconditioner(-A, 2)
 @time p = AMGPreconditioner(A)
-@time LUi = ilu(A, τ = 0.5)
+@time LUi = ilu(A, τ = 0.1)
 
 x6 = @time jacobi(A, b; maxiter=1000, Pl = LUi)
 sum(abs.(x0-x6))
