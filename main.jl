@@ -15,11 +15,11 @@ mA = -A;
 
 
 @time x = A\b;
-
+using AlgebraicMultigrid
 @time begin
     for i=1:100
         ml = ruge_stuben(A);
-        solve(ml, b, tol=1e-5);
+        AlgebraicMultigrid.solve(ml, b);
     end
 end
 

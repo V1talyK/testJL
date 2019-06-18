@@ -1,7 +1,7 @@
 using IterativeSolvers, Preconditioners, IncompleteLU, LinearAlgebra
-LinearAlgebra.BLAS.set_num_threads(1) #set_num_threads
+LinearAlgebra.BLAS.set_num_threads(2) #set_num_threads
 
-@time for i=1:50
+@time for i=1:100
     x0 = A\b;
 end
 @time x0 = A\b;
@@ -17,7 +17,7 @@ x11 = copy(x1)
 @time x2 = IterativeSolvers.cg(A, b);
 @time IterativeSolvers.cg!(x2,A, b);
 
-@time for i=1:50
+@time for i=1:50s
     x3 = IterativeSolvers.cg(A, b; Pl = LUi);
 end
 
