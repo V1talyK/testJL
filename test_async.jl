@@ -1,8 +1,11 @@
-function fun1(Ab,an,j)
-    local x
-    for i=1:10
-        an[:]=Ab[1]\Ab[2];
+function fun1(A,b)
+    for i=1:20
+        x=A\b;
     end
+    x=A\b;
+    #x = cholesky(A)
+    return x
+    #end
 end
 
 function fun2(Ab,an,j)
@@ -32,8 +35,8 @@ end
 
 A=rand(1000,1000);
 b = rand(1000)
-Av=Vector(undef,8); for i=1:8 Av[i]=A; end;
-bv=Vector(undef,8); for i=1:8 bv[i]=b; end;
+Av=Vector(undef,8); for i=1:8 Av[i]=copy(A); end;
+bv=Vector(undef,8); for i=1:8 bv[i]=copy(b); end;
 Ab=Vector(undef,8); for i=1:8 Ab[i]=[A,b]; end;
 
 @time fun1(A,b)
