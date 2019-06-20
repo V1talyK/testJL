@@ -1,8 +1,21 @@
-function fun1(Ab,an,j)
-    local x
-    for i=1:10
-        an[:]=Ab[1]\Ab[2];
-    end
+function fun1(A,b)
+     #x=A\b;
+     for i=1:10
+         ml = ruge_stuben(A);
+         x = solve(ml, b);
+     end
+     ml = ruge_stuben(A);
+     x = solve(ml, b);
+    return x
+end
+
+function fun4(A,b)
+     #x=A\b;
+     for i=1:10
+         x=Task(A\b);
+     end
+     x=A\b;
+    return x
 end
 
 function fun2(Ab,an,j)
@@ -32,8 +45,8 @@ end
 
 A=rand(1000,1000);
 b = rand(1000)
-Av=Vector(undef,8); for i=1:8 Av[i]=A; end;
-bv=Vector(undef,8); for i=1:8 bv[i]=b; end;
+Av=Vector(undef,8); for i=1:8 Av[i]=copy(A); end;
+bv=Vector(undef,8); for i=1:8 bv[i]=copy(b); end;
 Ab=Vector(undef,8); for i=1:8 Ab[i]=[A,b]; end;
 
 @time fun1(A,b)
@@ -84,9 +97,9 @@ n = 100000; a = zeros(Float64, n); @time g(a, n)
 
 
 function tmap(f,arg...)
-    y=Vector{Any}(length(arg[1]))
+    y=Vector{Any}(undef, length(arg[1]))
     @inbounds Threads.@threads for i=1:length(arg[1])
-        y[i] = f(map(x->x[i],arg));
+        y[i] = f(map(x->x[i],arg)...);
     end
     return y
 end
