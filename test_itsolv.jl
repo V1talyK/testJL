@@ -1,7 +1,7 @@
 using IterativeSolvers, Preconditioners, IncompleteLU, LinearAlgebra
-LinearAlgebra.BLAS.set_num_threads(1) #set_num_threads
+LinearAlgebra.BLAS.set_num_threads(2) #set_num_threads
 
-@time for i=1:50
+@time for i=1:100
     x0 = A\b;
 end
 @time x0 = A\b;
@@ -16,6 +16,10 @@ x11 = copy(x1)
 
 @time x2 = IterativeSolvers.cg(A, b);
 @time IterativeSolvers.cg!(x2,A, b; Pl = LUi);
+
+@time for i=1:50s
+    x3 = IterativeSolvers.cg(A, b; Pl = LUi);
+end
 
 cux2=CuArrays.CuArray(0*rand(length(x2)))
 
@@ -61,7 +65,7 @@ sum(abs.(x0-x4))
 
 @time p = CholeskyPreconditioner(A, 1)
 @time p = AMGPreconditioner(A)
-@time LUi = ilu(A, τ = 0.9)
+@time LUi = ilu(A, τ = 0.1)
 
 x6 = @time jacobi(A, b; maxiter=1000, Pl = LUi)
 sum(abs.(x0-x6))

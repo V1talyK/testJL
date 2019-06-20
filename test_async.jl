@@ -1,11 +1,21 @@
 function fun1(A,b)
-    for i=1:20
-        x=A\b;
-    end
-    x=A\b;
-    #x = cholesky(A)
+     #x=A\b;
+     for i=1:10
+         ml = ruge_stuben(A);
+         x = solve(ml, b);
+     end
+     ml = ruge_stuben(A);
+     x = solve(ml, b);
     return x
-    #end
+end
+
+function fun4(A,b)
+     #x=A\b;
+     for i=1:10
+         x=Task(A\b);
+     end
+     x=A\b;
+    return x
 end
 
 function fun2(Ab,an,j)
@@ -87,9 +97,9 @@ n = 100000; a = zeros(Float64, n); @time g(a, n)
 
 
 function tmap(f,arg...)
-    y=Vector{Any}(length(arg[1]))
+    y=Vector{Any}(undef, length(arg[1]))
     @inbounds Threads.@threads for i=1:length(arg[1])
-        y[i] = f(map(x->x[i],arg));
+        y[i] = f(map(x->x[i],arg)...);
     end
     return y
 end
