@@ -1,35 +1,37 @@
-using OpenCL
-import OpenCL.cl.CLArray
-import CLBLAS
-const clblas = CLBLAS
-
-
-clblas.setup()
-device, ctx, queue = clblas.get_next_compute_context()
-alpha = 1.0
-beta = 0.0
-queue =1
-
-hA = rand(Float32,5, 10)
-hB = rand(10, 5)
-A = CLArray(hA)
-B = CLArray(queue, hB)
-C = cl.zeros(queue, 5, 5)
-
-clblas.gemm!('N', 'N', alpha, A, B, beta, C)
-hC = cl.to_host(C)
-if isapprox(hC, hA * hB)
-    info("Success!")
+using CLBlast, OpenCL
+@static if VERSION < v"0.7-"
+    LA = LinAlg
 else
-    error("Results diverged")
+    using Random, LinearAlgebra
+    LA = LinearAlgebra
 end
 
-using CLArrays
+device, context, queue = cl.create_compute_context()
 
-for dev in CLArrays.devices()
-    CLArrays.init(dev)
-    x = zeros(CLArray{Float32}, 5, 5) # create a CLArray on device `dev`
-end
+# setup data
+α = 1.f0
+β = 1.f0
+n=1
+A = rand(Float32, 100*n, 100*n)
+B = rand(Float32, 100*n, 1)
+C = zeros(Float32, 100*n, 60*n)
+
+# transfer data
+A_cl = cl.CLArray(queue, A)
+B_cl = cl.CLArray(queue, B[:])
+C_cl = cl.CLArray(queue, C)
+
+# compute
+@time LA.BLAS.gemm!('N', 'N', α, A, B, β, C)
+@time CLBlast.gemm!('N', 'N', α, A_cl, B_cl, β, C_cl)
+
+# compare results
+Array(C_cl)
+@assert cl.to_host(C_cl) ≈ C
 
 
-Pkg.build("CLBlast")
+@time fA\b;
+@time A\b;
+
+@time A*B;
+@time A_cl*B_cl;
