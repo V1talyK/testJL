@@ -1,6 +1,7 @@
 using JLD, SparseArrays
 r=dirname(Base.source_path());
 d = JLD.load(joinpath(r,"myfile.jld"));
+d = JLD.load(joinpath(r,"myfile200k.jld"));
 A=d["A"];
 
 c = Vector(undef,length(A.rowval))
