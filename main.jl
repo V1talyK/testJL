@@ -34,8 +34,8 @@ end
 @time for i=1:1
     x3=LUf\b;
 end
-@time CL=LinearAlgebra.Cholesky(A);
-@time for i=1:50
+@time CL=cholesky(-A);
+@time for i=1:1
     x2 = CL\b;
 end
 
