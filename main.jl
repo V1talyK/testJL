@@ -59,3 +59,8 @@ sum(LU[:L]*LU[:U]-(LU[:Rs] .* A)[LU[:p], LU[:q]])
 
 Y = zeros(Float64,length(b));
 @time A_ldiv_B!(Y, LU, b)
+
+using HSL
+Pkg.test("HSL")
+LDL = HSL.Ma97(A)
+ma57_factorize(LDL)
