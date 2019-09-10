@@ -9,7 +9,7 @@ x     = zeros(elty,n)
 d_x   = CuArray(x)
 tol   = convert(real(elty),1e-4)
 @time d_x   = CuArrays.CUSOLVER.csrlsvqr!(d_A,d_b,d_x,tol,one(Cint),'O')
-h_x   = to_host(d_x)
+h_x   = CuArrays.to_host(d_x)
 
 
 A     = rand(elty,n,n)
