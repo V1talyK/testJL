@@ -22,10 +22,10 @@ x11 = copy(x1)
     x3 = IterativeSolvers.cg(A, b; Pl = LUi);
 end
 
-cux2=CuArrays.CuArray(0*rand(length(x2)))
+cux2=CuArrays.CuArray(0*rand(length(x)))
 
 @time IterativeSolvers.cg!(cux2,cuA, cuB);
-@time cux3 = IterativeSolvers.cg(cuA, cuB);
+@time cux3 = IterativeSolvers.cg(cuA, cuB)
 
 cuL =  CuArrays.CUSPARSE.CuSparseMatrixCSC(LUi.L);
 cux3 = IterativeSolvers.cg(cuA, cuB; Pl = cuL);
