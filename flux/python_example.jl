@@ -1,21 +1,8 @@
-net_out = m(input_point)
-net_out_jacobian = Tracker.jacobian(m,input_point)
-net_out_hessian = Tracker.hessian(m,input_point)
-
-psy_t = psy_trial(input_point, net_out)
-
-psy_t_jacobian = map(x->Tracker.gradient(psy_trial,input_point, net_out[x]),1:10)
-psy_t_hessian = map(x->hessian(psy_trial,input_point, net_out[x]),1:10)
-gradient_of_trial_d2x = psy_t_hessian[1][1]
-gradient_of_trial_d2y = psy_t_hessian[2][2]
-func = fun23(input_point) # right part function
-err_sqr = ((gradient_of_trial_d2x + gradient_of_trial_d2y) - func)^2
-loss_sum += err_sqr
-
-#Flux.Tracker.forward(psy_trial, input_point, net_out)
+using ForwardDiff
+xy = [[i,j]/10 for i in 1:10, j in 1:10][:]
 m1(x) = Tracker.data(psy_trial(m2(xy[1]), x)[1])
 m2 = Chain(Dense(2,10,σ),Dense(10,1))
-xy = [[i,j]/10 for i in 1:10, j in 1:10][:]
+
 
 W1 = rand(10,2);
 W2 = rand(1,10);
@@ -54,14 +41,6 @@ function loss_flux(W1,W2)
     sum(abs2.(l_part-r_part)) # loss function
 end
 
-hessian(psy_trial,rty[1])
-
-opt = ADAM(0.1);#opt = Descent(0.1)
-
-data = Iterators.repeated((), 100)
-prm = Flux.params(m1)
-
-Flux.train!(loss_flux, prm, data, opt)#cb = ()->println(loss(x,y))
 ForwardDiff.hessian.(Uf,xy)
 loss_flux(W1,W2)
 @time for i=1:50
