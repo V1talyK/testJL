@@ -18,15 +18,25 @@ end
 #     return (a1*W[2])[:]
 # end
 m = Dense(2,10,σ)
+x_space = 1:10
+y_space = 1:10
+input_point = [1,1]
 m(input_point)
-neural_network_x(input_point')
+
+gf1(x) = Tracker.gradient(neural_network_x,x)[1]
+jf(x) = Tracker.jacobian(neural_network_x,input_point[:]')
+jf1(input_point)
+
 
 function Ax(x)
     return x[2] * sin(pi * x[1])
 end
 
-function psy_trial(x, net_out)
-    return Ax(x) + x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
+function psy_trial(net_out,x)
+    #x = in_z[1]
+    # = in_z[2]
+    B = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
+    return B
 end
 
 function loss_function(W, x, y)
@@ -52,11 +62,9 @@ function loss_function(W, x, y)
     return loss_sum
 end
 
-input_point = [1,1]
+
 neural_network_x(input_point)
-gf1(x) = Tracker.gradient(neural_network_x,x)[1]
-jf(x) = Tracker.jacobian(neural_network_x,input_point[:]')
-jf1(input_point)
+
 
 
 dfg = grad(neural_network_x,input_point);
@@ -66,8 +74,6 @@ W = [rand(2, 10), rand(10, 1)]
 lmb = 0.001
 
 neural_network(W, [1, 1])
-x_space = 1:10
-y_space = 1:10
 loss_function(W, x_space, y_space)
 
 for i in 100
