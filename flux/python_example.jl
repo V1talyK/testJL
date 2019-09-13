@@ -1,4 +1,4 @@
-using ForwardDiff
+using ForwardDiff, UnicodePlots
 xy = [[i,j]/10 for i in 1:10, j in 1:10][:]
 m1(x) = Tracker.data(psy_trial(m2(xy[1]), x)[1])
 m2 = Chain(Dense(2,10,σ),Dense(10,1))
@@ -51,3 +51,6 @@ loss_flux(W1,W2)
     W1[:] = W1[:] .- 0.0001*loss_grad1[:]
     W2[:] = W2[:] .- 0.0001*loss_grad2[:]
 end
+
+
+plt = lineplot([-1, 2, 3, 7], [-1, 2, 9, 4], title = "Example Plot", name = "my line", xlabel = "x", ylabel = "y")
