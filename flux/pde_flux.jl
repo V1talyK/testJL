@@ -12,10 +12,11 @@ data = Iterators.repeated((), 10)
 
 m1 = Chain(Dense(2,10,σ),Dense(10,1))
 m3(x) = psy_trial(x)[1]
-m1.(xy)
+m3(x) = psy_trial(m1(x),x)[1]
+m1(xy[1])
 m3.(xy)
 
-df(x) = Tracker.gradient(x->m1(x)[1],x; nest = true)[1]
+df(x) = Tracker.gradient(x->m1(x)[1],x; nest = true)[1][1]
 d2f(x) = Tracker.gradient(df(x),x; nest = true)
 df(xy[1])
 d2f(xy[1])
@@ -27,8 +28,8 @@ Tracker.hessian(m11,xy[1])
 Tracker.gradient(m1,xy[1]; nest = true)
 
 function loss_flux()
-    #hes_out = ForwardDiff.hessian.(x->Tracker.data(m3(x))[1],xy)
-    hes_out = m3.(xy)#Tracker.gradient.(m3(x))[1],xy)
+    hes_out = ForwardDiff.hessian.(x->Tracker.data(m3(x)),xy)
+    #hes_out = m3.(xy)#Tracker.gradient.(m3(x))[1],xy)
     d2P_dx2 = map(x->x[1],hes_out)
     d2P_dy2 = map(x->x[1],hes_out)
     r_part = fun23.(xy)
@@ -63,3 +64,5 @@ display(plt)
 ps = Params(prm)
 Tracker.gradient(ps)
 gr
+
+ForwardDiff.hessian(x->Tracker.data(m3(x)),xy[1])
