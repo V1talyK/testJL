@@ -1,92 +1,65 @@
-using AutoGrad
+fun23(x) = 0.
+Ax(x) = x[2] * sin(pi * x[1]);
+psy_trial(net_out,x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
+psy_trial(x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * m1(x)
 
-function fun23(x)
-    return 0.
+cb1 = ()->println(loss_flux())
+cb2 = ()->println(loss_1())
+
+opt = ADAM(0.1);#opt = Descent(0.0001)
+
+data = Iterators.repeated((), 10)
+
+m1 = Chain(Dense(2,10,σ),Dense(10,1))
+m3(x) = psy_trial(x)[1]
+m1.(xy)
+m3.(xy)
+
+df(x) = Tracker.gradient(x->m1(x)[1],x; nest = true)[1]
+d2f(x) = Tracker.gradient(df(x),x; nest = true)
+df(xy[1])
+d2f(xy[1])
+
+m11(x) = m1(x)[1]
+Tracker.hessian(m11,xy[1])
+# d2f(xy[1])
+
+Tracker.gradient(m1,xy[1]; nest = true)
+
+function loss_flux()
+    #hes_out = ForwardDiff.hessian.(x->Tracker.data(m3(x))[1],xy)
+    hes_out = m3.(xy)#Tracker.gradient.(m3(x))[1],xy)
+    d2P_dx2 = map(x->x[1],hes_out)
+    d2P_dy2 = map(x->x[1],hes_out)
+    r_part = fun23.(xy)
+    l_part = d2P_dx2 + d2P_dy2;
+    B = sum(abs2.(l_part-r_part)) # loss function
+    Tracker.TrackedReal{Float64}(B)
 end
 
-# function sigmoid1(x)
-#     return 1. ./ (1. .+ exp.(-x))
-# end
-#
-# function neural_network(W, x)
-#     a1 = sigmoid1(x*W[1])
-#     return (a1*W[2])[:]
-# end
-#
-# function neural_network_x(x)
-#     a1 = sigmoid1(x*W[1])
-#     return (a1*W[2])[:]
-# end
-m = Dense(2,10,σ)
-x_space = 1:10
-y_space = 1:10
-input_point = [1,1]
-m(input_point)
+loss_1() = Flux.mse(map(x->x[1],m11.(xy)), 0*ones(100))
 
-gf1(x) = Tracker.gradient(neural_network_x,x)[1]
-jf(x) = Tracker.jacobian(neural_network_x,input_point[:]')
-jf1(input_point)
+loss_flux()
+pr = params(m3)
+prm = Flux.params(m1)
+prm = Flux.params(m3)
 
+Flux.train!(loss_flux, prm, data, opt, cb = cb1)
+Flux.train!(loss_1, prm, data, opt, cb = cb2)
 
-function Ax(x)
-    return x[2] * sin(pi * x[1])
-end
+grd = Flux.Tracker.gradient(()->loss_flux(), prm);
+grd[W2]
 
-function psy_trial(net_out,x)
-    #x = in_z[1]
-    # = in_z[2]
-    B = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
-    return B
-end
+ForwardDiff,gradient(loss_flux,W1)
+Flux.Tracker.update!(opt, prm, grd)
+prm
 
-function loss_function(W, x, y)
-    loss_sum = 0.
-    for xi in x
-      for yi in y
+NeS = reshape(Tracker.data.(m3.(xy)),10,10)
+plt = heatmap(AnS, xscale=0.1, yscale=0.1, xoffset=0, colormap=:inferno);
+plt = heatmap(NeS, xscale=0.1, yscale=0.1, xoffset=0, colormap=:inferno);
+plt = heatmap(PyS, xscale=0.1, yscale=0.1, xoffset=0, colormap=:inferno);
+display(plt)
 
-        input_point = [xi, yi]
-        net_out = neural_network(W, input_point)[1]
-        #net_out_jacobian = jacobian(neural_network_x,input_point)
-        #net_out_hessian = jacobian(jacobian(neural_network_x))(input_point)
-
-        psy_t = psy_trial(input_point, net_out)
-        psy_t_jacobian = jacobian(psy_trial)(input_point, net_out)
-        psy_t_hessian = jacobian(jacobian(psy_trial))(input_point, net_out)
-        gradient_of_trial_d2x = psy_t_hessian[1][1]
-        gradient_of_trial_d2y = psy_t_hessian[2][2]
-        func = fun23(input_point) # right part function
-        err_sqr = ((gradient_of_trial_d2x + gradient_of_trial_d2y) - func)^2
-        loss_sum += err_sqr
-      end
-    end
-    return loss_sum
-end
-
-
-neural_network_x(input_point)
-
-
-
-dfg = grad(neural_network_x,input_point);
-
-neural_network_x(input_point)
-W = [rand(2, 10), rand(10, 1)]
-lmb = 0.001
-
-neural_network(W, [1, 1])
-loss_function(W, x_space, y_space)
-
-for i in 100
-    loss_grad =  grad(loss_function(W, x_space, y_space))
-
-    W[1] = W[1] - lmb * loss_grad[1]
-    W[2] = W[2] - lmb * loss_grad[2]
-end
-
-
-
-fun45(x) = x
-grad(fun45)(1,2)
-AutoGrad.jacobian(fun45)
-jacobian(fun45,[1, 2])
-hessian()
+ps = Params(prm)
+Tracker.gradient(ps)
+gr

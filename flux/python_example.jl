@@ -11,10 +11,10 @@ b2 = zeros(1,1);
 
 modl1(x,W1,b1) = sigmoid.(W1*x.+b1);
 modl2(x,W2,b2) = W2*x.+b2;
-m1(x) = psy_trial(modl2(W2,b2,modl1(W1,b1,x)),x)
+m1(x) = psy_trial(modl2(modl1(x,W1,b1),W2,b2),x)[1]
 
 
-Uf(xy[1])
+Uf.(xy)
 ForwardDiff.hessian.(Uf,xy)
 
 m1.(xy))
@@ -46,11 +46,11 @@ loss_flux(W1,W2)
 @time for i=1:50
     loss_grad1 = ForwardDiff.gradient(x->loss_flux(x,W2), W1)
     loss_grad2 = ForwardDiff.gradient(x->loss_flux(W1,x), W2)
-    println("lf: $(loss_flux(W1,W2)), as: $(sum(reshape(Uf.(xy),10,10) .- AnS))")
+    println("lf: $(loss_flux(W1,W2)), as: $(sum(Uf.(xy)[:] .- AnS[:]))")
 
     W1[:] = W1[:] .- 0.0001*loss_grad1[:]
     W2[:] = W2[:] .- 0.0001*loss_grad2[:]
 end
 
 
-plt = lineplot([-1, 2, 3, 7], [-1, 2, 9, 4], title = "Example Plot", name = "my line", xlabel = "x", ylabel = "y")
+PyS = reshape(Uf.(xy),10,10);
