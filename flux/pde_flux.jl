@@ -1,9 +1,9 @@
 cb1 = ()->println(loss_flux())
 cb2 = ()->println(loss_1())
 
-opt = ADAM(0.01);#opt = Descent(0.0001)
+opt = ADAM(0.05);#opt = Descent(0.0001)
 
-data = Iterators.repeated((), 50)
+data = Iterators.repeated((), 100)
 
 m1 = Chain(Dense(2,10,σ),Dense(10,1))
 m3(x) = pde_trialA(x,m1(x))[1]

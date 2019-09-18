@@ -3,12 +3,15 @@ function Axy(xy)
     #b_out = x[2] * sin(pi * x[1]);
     x = xy[1];    y = xy[2];
 
-    s1 = (1-x)*f0(y)
-    s2 = x*f1(y)
+    s1 = f0(y)
+    s2 = f1(y)
     s3 = g0(x)-((1-x)*g0(0)+x*g0(1))
     s4 = g1(x)-((1-x)*g1(0)+x*g1(1))
+    #s3 = g0(x)
+    #s4 = g1(x)
+    s5 = w0(x)*(1-funBW(x))*x*y*(1-x)*(1-y)/0.5^4
 
-    b_out = s1+s2+(1-y)*s3 + y*s4
+    b_out = (1-x)*s1+x*s2+(1-y)*s3 + y*s4 + s5
     return b_out
 end
 
@@ -28,16 +31,18 @@ f0(x) = log(0.05/sqrt((x-0.5)^2+0.25))
 f1(x) = log(0.05/sqrt((x-0.5)^2+0.25))
 g0(x) = log(0.05/sqrt((x-0.5)^2+0.25))
 g1(x) = log(0.05/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
+w0(x) = 1
 
 f0(1)
 println(Axy([0.5,0.5]))
 println(b_out([0.5,0.5]))
 b_out(x) = x[2] * sin(pi * x[1]);
 
+(x->w0(x)*(1-funBW(x)))([0.5,0.5])
 
 
 function pde_trialA(x, NeIn)
-    ψ = Axy(x) .+ funB0(x)*NeIn
+    ψ = Axy(x) .+ funB0(x)*funBW(x)*NeIn
     return ψ
 end
 
@@ -47,6 +52,7 @@ function pde_trialB(x, NeIn)
 end
 
 @inline funB0(x) = prod(x.*(1 .-x))
+@inline funBW(x) = sum(1 .-exp.(-(x.-0.5).^2))/2
 
 psy_trial(net_out,x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
 psy_trial(x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * m1(x)
