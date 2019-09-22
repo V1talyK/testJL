@@ -61,6 +61,10 @@ cuA = CuArrays.CUSPARSE.CuSparseMatrixCSR(-A);
 CL = cholesky(A)
 CLL = SparseArrays.sparse(CL.L)
 cuCLL =  CuArrays.CUSPARSE.CuSparseMatrixCSR(CLL);
+
+infoT = sv_analysis('T', 'S', 'L', cuCLL,'O')
+info = sv_analysis('N', 'S', 'L', cuCLL,'O')
+
 x = CuArrays.zeros(eltype(cuA),size(A,1))
 r = cuB-cuA*x;
 z = copy(r)
@@ -97,6 +101,3 @@ q = copy(r)
 
     if mod(i,20)==0 println(sum(abs.(cuB-cuA*x))) end
 end
-
-infoT = sv_analysis('T', 'S', 'L', cuCLL,'O')
-info = sv_analysis('N', 'S', 'L', cuCLL,'O')
