@@ -1,7 +1,7 @@
 using ForwardDiff, UnicodePlots
 xy = [[i,j]/10 for i in 1:10, j in 1:10][:]
 xy = [[i,j]/20 for i in 0:20, j in 0:20][:]
-xy = [[i,j]/100 for i in 0:100, j in 0:100][:]
+xy100 = [[i,j]/100 for i in 0:100, j in 0:100][:]
 m1(x) = Tracker.data(psy_trial(m2(xy[1]), x)[1])
 m2 = Chain(Dense(2,10,σ),Dense(10,1))
 
@@ -28,7 +28,7 @@ function analytic_solution(xy)
     return B
 end
 
-AnS = reshape(analytic_solution(xy),101,101)
+AnS = reshape(analytic_solution(xy),21,21)
 
 function loss_flux(W1,W2)
     #W1 = W[1]
@@ -56,3 +56,8 @@ end
 
 
 PyS = reshape(Uf.(xy),10,10);
+
+z(x) = x[1]*(1-x[1])*x[2]*(1-x[2])
+Z = z.(xy)
+Z = reshape(Z,101,101)
+plt = heatmap(Z, xscale=0.1, yscale=0.1, xoffset=0, colormap=:inferno);   display(plt);

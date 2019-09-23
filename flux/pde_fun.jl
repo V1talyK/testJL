@@ -1,4 +1,4 @@
-fun23(x) = (x[1]==0.5) & (x[2].==0.5) ? 1 : 0;
+fun23(x) = 0#(x[1]==0.5) & (x[2].==0.5) ? 1 : 0;
 function Axy(xy)
     #b_out = x[2] * sin(pi * x[1]);
     x = xy[1];    y = xy[2];
@@ -7,12 +7,17 @@ function Axy(xy)
     s2 = f1(y)
     s3 = g0(x)-((1-x)*g0(0)+x*g0(1))
     s4 = g1(x)-((1-x)*g1(0)+x*g1(1))
-    #s3 = g0(x)
-    #s4 = g1(x)
-    s5 = w0(x)*(1-funBW(x))*x*y*(1-x)*(1-y)/0.5^4
 
-    b_out = (1-x)*s1+x*s2+(1-y)*s3 + y*s4 + s5
+    b_out = (1-x)*s1+x*s2+(1-y)*s3 + y*s4
     return b_out
+end
+
+function AxyW(xy)
+    F = Axy(xy)
+    F0 = Axy([0.5, 0.5])
+    Rw = R(xy,rw)
+    B = F - (F0-Rw)*z(xy)/z([0.5,0.5])
+    return B
 end
 
 function Bxy(x)
@@ -27,11 +32,12 @@ function Bxy(x)
     return b_out
 end
 
-f0(x) = log(0.05/sqrt((x-0.5)^2+0.25))
-f1(x) = log(0.05/sqrt((x-0.5)^2+0.25))
-g0(x) = log(0.05/sqrt((x-0.5)^2+0.25))
-g1(x) = log(0.05/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
+f0(x) = 1+log(rw/sqrt((x-0.5)^2+0.25))
+f1(x) = 1+log(rw/sqrt((x-0.5)^2+0.25))
+g0(x) = 1+log(rw/sqrt((x-0.5)^2+0.25))
+g1(x) = 1+log(rw/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
 w0(x) = 1
+rw = 0.05
 
 f0(1)
 println(Axy([0.5,0.5]))
@@ -42,7 +48,7 @@ b_out(x) = x[2] * sin(pi * x[1]);
 
 
 function pde_trialA(x, NeIn)
-    ψ = Axy(x) .+ funB0(x)*funBW(x)*NeIn
+    ψ = AxyW(x) .+ funB0(x)*(1-R(x,rw))*NeIn
     return ψ
 end
 
@@ -74,16 +80,29 @@ end
 
 get_hes(x->x[1].^2 +x[2].^3,[1.,2.])
 
-hes_out = get_hes.(x->m3(x),xy)
+hes_out = get_hes.(x->m3(x),xy)[220:222]
 get_hes(x->m3(x),xy[1])
 
-function one_well(xy)
+function one_well(xy,rw=0.05)
     xy0 = [0.5, 0.5]
     R = sum((xy.-xy0).^2).^0.5
-    rw = 0.05
-    P = R.==0 ? 1 : log(rw/R)
+    #println(R)
+    P = R.==0 ? 1. : 1+log(rw/R)
     return P
 end
 
-AnS = one_well.(xy);
-AnS = reshape(AnS,21,21)
+function R(x,rw=0.05)
+    #println(sqrt((x[1]-0.5).^2 + (x[2]-0.5).^2 + rw*rw))
+    1+log(rw/sqrt((x[1]-0.5).^2 + (x[2]-0.5).^2 + rw*rw))
+end
+
+
+function loss_flux2()
+    hes_out = ForwardDiff.hessian.(x->Tracker.data(m3(x))[1],xy)
+    d2P_dx2 = map(x->x[1],hes_out)
+    d2P_dy2 = map(x->x[4],hes_out)
+    r_part = fun23.(xy)
+    l_part = d2P_dx2 + d2P_dy2;
+    B = sum(abs2.(l_part-r_part)) # loss function
+    #Tracker.TrackedReal{Float64}(B)
+end
