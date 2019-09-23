@@ -58,7 +58,8 @@ rho = dot(r,z)
 end
 
 cuA = CuArrays.CUSPARSE.CuSparseMatrixCSR(-A);
-CL = cholesky(A)
+cuB = CuArray(b)
+CL = cholesky(-A)
 CLL = SparseArrays.sparse(CL.L)
 cuCLL =  CuArrays.CUSPARSE.CuSparseMatrixCSR(CLL);
 
