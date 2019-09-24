@@ -16,7 +16,7 @@ function AxyW(xy)
     F = Axy(xy)
     F0 = Axy([0.5, 0.5])
     Rw = R(xy,rw)
-    B = F - (F0-Rw)*z(xy)/z([0.5,0.5])
+    B = F - (F0-Rw)*outBnd(xy)/outBnd([0.5,0.5])
     return B
 end
 
@@ -32,20 +32,14 @@ function Bxy(x)
     return b_out
 end
 
-f0(x) = 1+log(rw/sqrt((x-0.5)^2+0.25))
-f1(x) = 1+log(rw/sqrt((x-0.5)^2+0.25))
-g0(x) = 1+log(rw/sqrt((x-0.5)^2+0.25))
-g1(x) = 1+log(rw/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
+f0(x) = pw+log(rw/sqrt((x-0.5)^2+0.25))
+f1(x) = pw+log(rw/sqrt((x-0.5)^2+0.25))
+g0(x) = pw+log(rw/sqrt((x-0.5)^2+0.25))
+g1(x) = pw+log(rw/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
 w0(x) = 1
-rw = 0.05
 
-f0(1)
-println(Axy([0.5,0.5]))
-println(b_out([0.5,0.5]))
-b_out(x) = x[2] * sin(pi * x[1]);
 
-(x->w0(x)*(1-funBW(x)))([0.5,0.5])
-
+outBnd(xy, xy0 = [0 0; 1 1]) = prod(xy'.-xy0)
 
 function pde_trialA(x, NeIn)
     ψ = AxyW(x) .+ funB0(x)*(1-R(x,rw))*NeIn
@@ -78,22 +72,17 @@ function get_hes(f,x)
     return B
 end
 
-get_hes(x->x[1].^2 +x[2].^3,[1.,2.])
-
-hes_out = get_hes.(x->m3(x),xy)[220:222]
-get_hes(x->m3(x),xy[1])
-
 function one_well(xy,rw=0.05)
     xy0 = [0.5, 0.5]
     R = sum((xy.-xy0).^2).^0.5
     #println(R)
-    P = R.==0 ? 1. : 1+log(rw/R)
+    P = R.==0 ? pw : pw+log(rw/R)
     return P
 end
 
 function R(x,rw=0.05)
     #println(sqrt((x[1]-0.5).^2 + (x[2]-0.5).^2 + rw*rw))
-    1+log(rw/sqrt((x[1]-0.5).^2 + (x[2]-0.5).^2 + rw*rw))
+    pw+log(rw/sqrt((x[1]-0.5).^2 + (x[2]-0.5).^2 + rw*rw))
 end
 
 
@@ -105,4 +94,10 @@ function loss_flux2()
     l_part = d2P_dx2 + d2P_dy2;
     B = sum(abs2.(l_part-r_part)) # loss function
     #Tracker.TrackedReal{Float64}(B)
+end
+
+function tuneKH!(kh,xy)
+    for (k, v) in enumerate(xy)
+        kh[k] = .&(0.25<v[2]<0.75, 0.25<v[1]<0.75) ? 2 : 1
+    end
 end
