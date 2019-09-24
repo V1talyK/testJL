@@ -72,7 +72,7 @@ z = copy(r)
 p = copy(z)
 rho = [dot(r,z)]
 q = copy(r)
-@time for i=1:200
+@time for i=1:20
     t = CUSPARSE.sv_solve('T','L',one(Float64),cuCLL,r,infoT,'O')
     z[:] = CUSPARSE.sv_solve('N','L',one(Float64),cuCLL,t,info,'O')
     #t = cuCLL\r;
@@ -100,5 +100,5 @@ q = copy(r)
     r[:] -= α*q
     nrmr = norm(r)
 
-    if mod(i,20)==0 println(sum(abs.(cuB-cuA*x))) end
+    if mod(i,10)==0 println(sum(abs.(cuB-cuA*x))) end
 end
