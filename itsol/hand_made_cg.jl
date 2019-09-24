@@ -1,4 +1,4 @@
-using LinearAlgebra
+using LinearAlgebra, CuArrays, CuArrays.CUSPARSE
 x0 = zeros(size(A,1))
 @time r0 = b-A*x0
 Y = copy(b)
@@ -57,14 +57,15 @@ rho = dot(r,z)
     if mod(i,20)==0 println(sum(abs.(b-A*x))) end
 end
 
-cuA = CuArrays.CUSPARSE.CuSparseMatrixCSR(-A);
+cuA = CuArrays.CUSPARSE.CuSparseMatrixCSR(-AP);
 cuB = CuArray(b)
 CL = cholesky(-A)
-CLL = SparseArrays.sparse(CL.L)
-cuCLL =  CuArrays.CUSPARSE.CuSparseMatrixCSR(CLL);
+CLU = SparseArrays.sparse(CL.L)';
+findnz(CL[:U])
+cuCLU =  CuArrays.CUSPARSE.CuSparseMatrixCSR(CLU);
 
-infoT = sv_analysis('T', 'S', 'L', cuCLL,'O')
-info = sv_analysis('N', 'S', 'L', cuCLL,'O')
+infoT = sv_analysis('T', 'T', 'U', icfA,'O')
+info = sv_analysis('N', 'T', 'U', icfA,'O')
 
 x = CuArrays.zeros(eltype(cuA),size(A,1))
 r = cuB-cuA*x;
@@ -72,33 +73,34 @@ z = copy(r)
 p = copy(z)
 rho = [dot(r,z)]
 q = copy(r)
-@time for i=1:20
-    t = CUSPARSE.sv_solve('T','L',one(Float64),cuCLL,r,infoT,'O')
-    z[:] = CUSPARSE.sv_solve('N','L',one(Float64),cuCLL,t,info,'O')
-    #t = cuCLL\r;
-    #z = cuCLL'\t
-    #global rho
-    #rho = dot(r,r)
-    rhop = copy(rho)
-    rho[1] = dot(r,z)
-    if i==1
-        p[:] = copy(z)
-    else
-        β = rho[1]/rhop[1]
-        z[:] = z+β*p
-        p[:] = z
-    end
-
-
-    #y = α ∗ op ( A ) ∗ x + β ∗ y
-    q[:] = cuA*p
-    temp = dot(p,q)
-    α = rho[1]/temp;
-
-    #ak = dr0/dot((A*z0),z0)
-    x[:] += α*p
-    r[:] -= α*q
-    nrmr = norm(r)
-
-    if mod(i,10)==0 println(sum(abs.(cuB-cuA*x))) end
+#for i=1:2
+r = -r
+t = CUSPARSE.sv_solve('T','U',one(Float64),icfA,r,infoT,'O')
+z[:] = CUSPARSE.sv_solve('N','U',one(Float64),icfA,t,info,'O')
+#t = cuCLL\r;
+#z = cuCLL'\t
+#global rho
+#rho = dot(r,r)
+rhop = copy(rho)
+rho[1] = dot(r,z)
+if i==1
+    p[:] = copy(z)
+else
+    β = rho[1]/rhop[1]
+    z[:] = z+β*p
+    p[:] = copy(z)
 end
+
+
+#y = α ∗ op ( A ) ∗ x + β ∗ y
+q[:] = cuA*p
+temp = dot(p,q)
+α = rho[1]/temp;
+
+#ak = dr0/dot((A*z0),z0)
+x[:] += α*p
+r[:] -= α*q
+nrmr = norm(r)
+
+if mod(i,1)==0 println(sum(abs.(cuB-cuA*x))) end
+#end

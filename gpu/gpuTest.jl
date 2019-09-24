@@ -75,3 +75,5 @@ icfA = CuArrays.CUSPARSE.ic02(cuA,index);
 nj = iluA-cuA;
 sum(nj)
 1
+
+CuArrays.CUSOLVER.csrlsvchol!(icfA,r,d_x,tol,one(Cint),'O')
