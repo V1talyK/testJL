@@ -12,11 +12,41 @@ function Axy(xy)
     return b_out
 end
 
-function AxyW(xy)
+# function AxyW(xy,wxy,rw=0.05)
+#     F = Axy(xy)
+#     F0 = Axy.(wxy)
+#     Rw = R(xy,rw)
+#     OBW = outBnd.(wxy)
+#     B = F - (F0-Rw)*outBnd(xy)/OBW)
+#     return B
+# end
+
+function AxyW(xy,wxy,pw)
     F = Axy(xy)
-    F0 = Axy([0.5, 0.5])
-    Rw = R(xy,rw)
-    B = F - (F0-Rw)*outBnd(xy)/outBnd([0.5,0.5])
+    F0 = Axy.(wxy)
+    #Rw = R(xy,rw)
+    OBW = outBnd.(wxy)
+    z = outBnd(xy)
+
+    nw = length(wxy)
+
+    MB = OBW.-OBW';
+    MB[1:nw+1:nw*nw] .= 1
+    BZ = prod(MB,dims=2)[:]
+
+    AZ = z.-OBW';
+    AX = ones(nw)
+    AZ1 = ones(nw)
+    for i=1:nw
+        AZ1[:]=AZ[:]
+        AZ1[i]=1.
+        AX[i] = prod(AZ1)
+    end
+    #AZ[1:nw+1:nw*nw] .= 1
+
+    DX = z.*AX./OBW./BZ
+    Rw = R(xy,wxy,pw,rw)
+    B = F -sum((F0 .- Rw).*DX)
     return B
 end
 
@@ -32,22 +62,23 @@ function Bxy(x)
     return b_out
 end
 
-f0(x) = pw+log(rw/sqrt((x-0.5)^2+0.25))
-f1(x) = pw+log(rw/sqrt((x-0.5)^2+0.25))
-g0(x) = pw+log(rw/sqrt((x-0.5)^2+0.25))
-g1(x) = pw+log(rw/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
+f0(x) = 10+log(rw/sqrt((x-0.5)^2+0.25))
+f1(x) = 10+log(rw/sqrt((x-0.5)^2+0.25))
+g0(x) = 10+log(rw/sqrt((x-0.5)^2+0.25))
+g1(x) = 10+log(rw/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
 w0(x) = 1
 
 
 outBnd(xy, xy0 = [0 0; 1 1]) = prod(xy'.-xy0)
 
 function pde_trialA(x, NeIn)
-    ψ = AxyW(x) .+ funB0(x)*(1-R(x,rw))*NeIn
+
+    ψ = funB0(x)*prod(1 .-R(x,wxy,pw,rw))*NeIn
     return ψ
 end
 
 function pde_trialB(x, NeIn)
-    ψ = Bxy(x) .+ funB0(x)/(1-x[2])*(NeIn-NeIn(x,1)-dN_dy(x,1))
+    ψ = Bxy(x) .+ funB0(x)/(1-x[2])*(NeIn-NeIn(x,1)-dN_dy(x,1))s
     return ψ
 end
 
@@ -76,13 +107,16 @@ function one_well(xy,rw=0.05)
     xy0 = [0.5, 0.5]
     R = sum((xy.-xy0).^2).^0.5
     #println(R)
-    P = R.==0 ? pw : pw+log(rw/R)
+    P = R.==0 ? pw[1] : pw[1]+log(rw/R)
     return P
 end
 
-function R(x,rw=0.05)
-    #println(sqrt((x[1]-0.5).^2 + (x[2]-0.5).^2 + rw*rw))
-    pw+log(rw/sqrt((x[1]-0.5).^2 + (x[2]-0.5).^2 + rw*rw))
+function R(x,wxy,pw,rw=0.05)
+    B = zeros(length(pw))
+    for i=1:length(pw)
+        B[i] = pw[i]+log(rw/sqrt(sum((x.-wxy[i]).^2) + rw*rw))
+    end
+    return B
 end
 
 

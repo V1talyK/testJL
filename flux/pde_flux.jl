@@ -3,18 +3,28 @@ cb1 = ()->println(loss_flux())
 cb2 = ()->println(loss_1())
 
 m1 = Chain(Dense(2,10,σ),Dense(10,1))
-m3(x) = pde_trialA(x,m1(x))[1]
+function M3(xy,wxy,pw)
+
+    fun = function m3(x)
+        A  = AxyW(x,wxy,pw)
+        #ia = findall((x[1].==map(x->x[1],xy)) .& (x[2].==map(x->x[2],xy)))
+        A.+pde_trialA(x,m1(x))[1]
+    end
+    return fun
+end
+
+m4 = M3(xy,wxy,pw)
 
 ib = map(x-> findall(sum((vcat(xy'...).-x).^2,dims=2)[:].<rw^2)[1],wxy)
 
 function common_loss(ib)
     kh = ones(Float64,length(xy))
-    tuneKH!(kh,xy)
+    #tuneKH!(kh,xy)
     lf = function loss_flux()
         #hes_out = ForwardDiff.hessian.(x->Tracker.data(m3(x))[1],xy)
         #hes_out = ForwardDiff.hessian.(x->m3(x,TD(m1(x)))[1],xy)
         #hes_out = m3.(xy)#Tracker.gradient.(m3(x))[1],xy)
-        hes_out = get_hes.(x->m3(x),xy)
+        hes_out = get_hes.(x->m4(x),xy)
         d2P_dx2 = map(x->x[1],hes_out)
         d2P_dy2 = map(x->x[2],hes_out)
         r_part = fun23.(xy)

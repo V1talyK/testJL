@@ -4,17 +4,17 @@ include("pde_fun.jl")
 include("pde_flux.jl")
 
 rw = 0.0005;    #Радиус скважины
-pw = 10;         #Забойное давление
+pw = [10,10];         #Забойное давление
 TD = Tracker.data;
 xy = [[i,j]/20 for i in 0:20, j in 0:20][:] # Сетка
 wxy = [[0.5 0.5],
        [0.25 0.25]]
 
+pw = [10.];
+wxy = [[0.5 0.5]]
+
 train_lap!()
 
-
-
-f0(1)
 println(Axy([0.5,0.5]))
 println(b_out([0.5,0.5]))
 b_out(x) = x[2] * sin(pi * x[1]);
@@ -47,4 +47,4 @@ Tracker.gradient(m1,xy[1]; nest = true)
 loss_1() = Flux.mse(map(x->x[1],m11.(xy)), 0*ones(100))
 
 loss_flux()
-loss_flux2()
+loss_flux3()
