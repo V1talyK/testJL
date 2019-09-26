@@ -74,11 +74,12 @@ r = cuB-cuA*x;
 r=r
 z = copy(r)
 p = copy(z)
+t = copy(z)
 rho = [dot(r,z)]
 q = copy(r)
-
-for i=1:5000
-    t = CUSPARSE.sv_solve('T','U',one(Float64),AU1,r,infoT,'O')
+n = 16610
+@time for i=1:5000
+    t[:] = CUSPARSE.sv_solve('T','U',one(Float64),AU1,r,infoT,'O')
     z[:] = CUSPARSE.sv_solve('N','U',one(Float64),AU1,t,info,'O')
     #t = cuCLL\r;
     #z = cuCLL'\t
@@ -91,19 +92,22 @@ for i=1:5000
     else
         β = rho[1]/rhop[1]
         #z[:] = z+β*p
-        z[:] = z+β*p
+        CuArrays.CUBLAS.axpy!(n,β,p,1,z,1) #z[:] = z+β*p
         p[:] = copy(z)
     end
 
     #y = α ∗ op ( A ) ∗ x + β ∗ y
-    q[:] = cuA*p
+    #q[:] = cuA*p
+    mv!('N',one(Float64),cuA,p,zero(Float64),q,'O')
     temp = dot(p,q)
     α = rho[1]/temp;
 
     #ak = dr0/dot((A*z0),z0)
-    x[:] += α*p
-    r[:] += -α*q
+    CuArrays.CUBLAS.axpy!(n,α,p,1,x,1) #x[:] += α*p
+    CuArrays.CUBLAS.axpy!(n,-α,q,1,r,1) #r[:] += -α*q
     nrmr = norm(r)
 
-    if mod(i,20)==0 println(sum(abs.(cuB-cuA*x))) end
+    if mod(i,100)==0 println(sum(abs.(cuB-cuA*x))) end
 end
+
+CuArrays.CUBLAS.axpy!()
