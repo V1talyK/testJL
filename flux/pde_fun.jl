@@ -73,7 +73,7 @@ outBnd(xy, xy0 = [0 0; 1 1]) = prod(xy'.-xy0)
 
 function pde_trialA(x, NeIn)
 
-    ψ = funB0(x)*prod(1 .-R(x,wxy,pw,rw))*NeIn
+    ψ = funB0(x)*prod(pw .-R(x,wxy,pw,rw))*NeIn
     return ψ
 end
 
@@ -103,7 +103,7 @@ function get_hes(f,x)
     return B
 end
 
-function one_well(xy,rw=0.05)
+function one_well(xy,rw=0.05)s
     xy0 = [0.5, 0.5]
     R = sum((xy.-xy0).^2).^0.5
     #println(R)
@@ -114,7 +114,7 @@ end
 function R(x,wxy,pw,rw=0.05)
     B = zeros(length(pw))
     for i=1:length(pw)
-        B[i] = pw[i]+log(rw/sqrt(sum((x.-wxy[i]).^2) + rw*rw))
+        B[i] = pw[i] +log(rw/sqrt(sum((x.-wxy[i]).^2) + rw*rw))
     end
     return B
 end
@@ -130,7 +130,14 @@ function loss_flux2()
     #Tracker.TrackedReal{Float64}(B)
 end
 
+a=100;
+b = 0.25;
+si(x,a,b) = 1/(1+exp(-(a*(x-b))))
+siab(xy,a,b) = (x->si(x[1],a,b)).(xy)
+kh = siab(xy,a,0.25).*(1 .-siab(xy,a,0.75))
+dkh =
 function tuneKH!(kh,xy)
+
     for (k, v) in enumerate(xy)
         kh[k] = .&(0.25<v[2]<0.75, 0.25<v[1]<0.75) ? 2 : 1
     end
