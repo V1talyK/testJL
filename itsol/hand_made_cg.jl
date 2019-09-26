@@ -57,50 +57,53 @@ rho = dot(r,z)
     if mod(i,20)==0 println(sum(abs.(b-A*x))) end
 end
 
-cuA = CuArrays.CUSPARSE.CuSparseMatrixCSR(-AP);
+cuA = CuArrays.CUSPARSE.CuSparseMatrixCSR(-A);
 cuB = CuArray(b)
 CL = cholesky(-A)
 CLU = SparseArrays.sparse(CL.L)';
 findnz(CL[:U])
 cuCLU =  CuArrays.CUSPARSE.CuSparseMatrixCSR(CLU);
 
+infoT = sv_analysis('T', 'T', 'U', AU1,'O')
 infoT = sv_analysis('T', 'T', 'U', icfA,'O')
+info = sv_analysis('N', 'T', 'U', AU1,'O')
 info = sv_analysis('N', 'T', 'U', icfA,'O')
 
 x = CuArrays.zeros(eltype(cuA),size(A,1))
 r = cuB-cuA*x;
+r=r
 z = copy(r)
 p = copy(z)
 rho = [dot(r,z)]
 q = copy(r)
-#for i=1:2
-r = -r
-t = CUSPARSE.sv_solve('T','U',one(Float64),icfA,r,infoT,'O')
-z[:] = CUSPARSE.sv_solve('N','U',one(Float64),icfA,t,info,'O')
-#t = cuCLL\r;
-#z = cuCLL'\t
-#global rho
-#rho = dot(r,r)
-rhop = copy(rho)
-rho[1] = dot(r,z)
-if i==1
-    p[:] = copy(z)
-else
-    β = rho[1]/rhop[1]
-    z[:] = z+β*p
-    p[:] = copy(z)
+
+for i=1:5000
+    t = CUSPARSE.sv_solve('T','U',one(Float64),AU1,r,infoT,'O')
+    z[:] = CUSPARSE.sv_solve('N','U',one(Float64),AU1,t,info,'O')
+    #t = cuCLL\r;
+    #z = cuCLL'\t
+    #global rho
+    #rho = dot(r,r)
+    rhop = copy(rho)
+    rho[1] = dot(r,z)
+    if i==1
+        p[:] = copy(z)
+    else
+        β = rho[1]/rhop[1]
+        #z[:] = z+β*p
+        z[:] = z+β*p
+        p[:] = copy(z)
+    end
+
+    #y = α ∗ op ( A ) ∗ x + β ∗ y
+    q[:] = cuA*p
+    temp = dot(p,q)
+    α = rho[1]/temp;
+
+    #ak = dr0/dot((A*z0),z0)
+    x[:] += α*p
+    r[:] += -α*q
+    nrmr = norm(r)
+
+    if mod(i,20)==0 println(sum(abs.(cuB-cuA*x))) end
 end
-
-
-#y = α ∗ op ( A ) ∗ x + β ∗ y
-q[:] = cuA*p
-temp = dot(p,q)
-α = rho[1]/temp;
-
-#ak = dr0/dot((A*z0),z0)
-x[:] += α*p
-r[:] -= α*q
-nrmr = norm(r)
-
-if mod(i,1)==0 println(sum(abs.(cuB-cuA*x))) end
-#end

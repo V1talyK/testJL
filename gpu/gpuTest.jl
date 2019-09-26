@@ -77,3 +77,20 @@ sum(nj)
 1
 
 CuArrays.CUSOLVER.csrlsvchol!(icfA,r,d_x,tol,one(Cint),'O')
+
+nz = Array(icfA.nzVal)
+row = Array(icfA.rowPtr)
+clm = Array(icfA.colVal)
+
+c = Vector(undef,length(clm))
+for i=1:length(row)-1
+    ind = convert(Array{Int64,1},row[i]:(row[i+1]-1))
+    c[ind] = i*ones(Int64,length(ind));
+end
+
+icfA_CPU = SparseArrays.sparse(c, clm, nz)
+tcpu = UpperTriangular(icfA_CPU)\Array(r)
+t = CuArray(tcpu)
+
+AU = sparse(UpperTriangular(icfA_CPU));
+AU1 = CuArrays.CUSPARSE.CuSparseMatrixCSR(AU);
