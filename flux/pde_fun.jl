@@ -92,15 +92,17 @@ function get_hes(f,x)
     dx = 0.001*x
     dx[x.==0] .= 0.001
     f2 = 2*f(x);
+    A = zeros(eltype(f2),length(x))
     B = zeros(eltype(f2),length(x))
     xmdx = similar(x)
     xpdx = similar(x)
     for (i, v) in enumerate(x)
         xmdx[:] = x; xmdx[i] = x[i] - dx[i]
         xpdx[:] = x; xpdx[i] = x[i] + dx[i]
+        A[i] = ((f(xpdx)-f(xmdx))/2/dx[i])[1]
         B[i] = ((f(xmdx)-f2+f(xpdx))./dx[i].^2)[1]
     end
-    return B
+    return A, B
 end
 
 function one_well(xy,rw=0.05)s
@@ -130,15 +132,30 @@ function loss_flux2()
     #Tracker.TrackedReal{Float64}(B)
 end
 
-a=100;
-b = 0.25;
-si(x,a,b) = 1/(1+exp(-(a*(x-b))))
-siab(xy,a,b) = (x->si(x[1],a,b)).(xy)
-kh = siab(xy,a,0.25).*(1 .-siab(xy,a,0.75))
-dkh =
-function tuneKH!(kh,xy)
-
-    for (k, v) in enumerate(xy)
-        kh[k] = .&(0.25<v[2]<0.75, 0.25<v[1]<0.75) ? 2 : 1
+function funKH(xa,xb,ya,yb)
+    if length(xa)>0
+        fsiX = map(y->x->si(x,y[1],y[2]),zip(xa,xb))
+        fsipX = (x->prod(map(f->f(x),fsiX)))
+        fX = (x->sum(map(f->1. -f(x),fsiX)))
+    else
+        fsipX(x) =1;
+        fX(x) = 0
     end
+
+    if length(ya)>0
+        fsiY = map(y->x->si(x,y[1],y[2]),zip(ya,yb))
+        fsipY = (y->prod(map(f->f(y),fsiY)))
+        fY = sum(map(f->1. -f(y),fsiY))
+    else
+        fsipY(y) = 1;
+        fY(y) = 0
+    end
+
+    funK(x,y)=fsipX(x)*fsipY(y);
+    dk_dx(x,y) = funK(x,y)*fX(x)
+    dk_dy(x,y) = funK(x,y)*fY(y)
+
+    return funK, dk_dx, dk_dy
 end
+
+si(x,a,b) = 1/(1+exp(-(a*(x-b))))
