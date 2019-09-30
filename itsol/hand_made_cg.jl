@@ -78,36 +78,38 @@ t = copy(z)
 rho = [dot(r,z)]
 q = copy(r)
 n = 16610
-@time for i=1:5000
-    t[:] = CUSPARSE.sv_solve('T','U',one(Float64),AU1,r,infoT,'O')
-    z[:] = CUSPARSE.sv_solve('N','U',one(Float64),AU1,t,info,'O')
+@time @inbounds for i=1:1284
+    @timeit to "t" t[:] .= CUSPARSE.sv_solve('T','U',one(Float64),AU1,r,infoT,'O')
+    # r_cpu = Array(r)
+    # @timeit to "t_cpu" AU\r_cpu
+    @timeit to "z" z[:] .= CUSPARSE.sv_solve('N','U',one(Float64),AU1,t,info,'O')
     #t = cuCLL\r;
     #z = cuCLL'\t
     #global rho
     #rho = dot(r,r)
     rhop = copy(rho)
-    rho[1] = dot(r,z)
-    if i==1
-        p[:] = copy(z)
-    else
+    #rho[1] = dot(r,z)
+    rho[1] = CuArrays.CUBLAS.dot(n,r,1,z,1);
+    @timeit to "if" if i!=1
         β = rho[1]/rhop[1]
         #z[:] = z+β*p
         CuArrays.CUBLAS.axpy!(n,β,p,1,z,1) #z[:] = z+β*p
-        p[:] = copy(z)
     end
-
+    p[:] = copy(z)
+    #CuArrays.CUBLAS.cublasDcopy_v2(CuArrays.CUBLAS.handle(),n,r,1,z,1)
     #y = α ∗ op ( A ) ∗ x + β ∗ y
     #q[:] = cuA*p
-    mv!('N',one(Float64),cuA,p,zero(Float64),q,'O')
-    temp = dot(p,q)
+    @timeit to "mv" CuArrays.CUSPARSE.mv!('N',one(Float64),cuA,p,zero(Float64),q,'O')
+    #temp = dot(p,q)
+    temp = CuArrays.CUBLAS.dot(n,p,1,q,1);
     α = rho[1]/temp;
 
     #ak = dr0/dot((A*z0),z0)
     CuArrays.CUBLAS.axpy!(n,α,p,1,x,1) #x[:] += α*p
     CuArrays.CUBLAS.axpy!(n,-α,q,1,r,1) #r[:] += -α*q
     nrmr = norm(r)
-
-    if mod(i,100)==0 println(sum(abs.(cuB-cuA*x))) end
+    #println(nrmr)
+    #if mod(i,100)==0 println(sum(abs.(cuB-cuA*x))) end
 end
 
 CuArrays.CUBLAS.axpy!()

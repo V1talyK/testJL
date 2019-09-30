@@ -70,6 +70,9 @@ CY = CuArrays.CUSPARSE.ilu0!('N',cuA,info,index);
 iluA = CuArrays.CUSPARSE.ilu02(cuA,index);
 icfA = CuArrays.CUSPARSE.ic02(cuA,index);
 
+infoA = sv_analysis('N', 'S', 'U', cuA,'O')
+icfA = CuArrays.CUSPARSE.ic0('N','S',cuA,infoA,'O');
+
 @time iluA*cuB
 @time cuA*cuB
 nj = iluA-cuA;
@@ -94,3 +97,6 @@ t = CuArray(tcpu)
 
 AU = sparse(UpperTriangular(icfA_CPU));
 AU1 = CuArrays.CUSPARSE.CuSparseMatrixCSR(AU);
+
+r_cpu = Array(r)
+@time AU\r_cpu

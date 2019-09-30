@@ -24,7 +24,7 @@ end
 
 cux2=CuArrays.CuArray(0*rand(length(x)))
 
-@time IterativeSolvers.cg!(cux2,cuA, cuB);
+@time IterativeSolvers.cg!(cux2,cuA, cuB,verbose=false);
 @time cux3 = IterativeSolvers.cg(cuA, cuB)
 
 cuL =  CuArrays.CUSPARSE.CuSparseMatrixCSC(LUi.L);
