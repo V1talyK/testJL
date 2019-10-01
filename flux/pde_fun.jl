@@ -145,7 +145,7 @@ function funKH(xa,xb,ya,yb)
     if length(ya)>0
         fsiY = map(y->x->si(x,y[1],y[2]),zip(ya,yb))
         fsipY = (y->prod(map(f->f(y),fsiY)))
-        fY = sum(map(f->1. -f(y),fsiY))
+        fY = (y->sum(map(f->1. -f(y),fsiY)))
     else
         fsipY(y) = 1;
         fY(y) = 0

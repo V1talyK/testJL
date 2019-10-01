@@ -18,7 +18,7 @@ function make_wellCon(wxy,xy,OUT)
 
     w2 = collect(1:nw)
     ioW = Base.open(OUT,"w");
-    writeToPipe(ioW, w1, w2)
+    writeToPipe(ioW, w2, w1)
     close(ioW)
 end
 
@@ -27,7 +27,7 @@ function make_geom(xy,OUT)
     id = collect(1:n)
     id50 = reshape(id,50,50)
     r = map(x->[x-1,x+1,x-50,x+50],id50)
-    r = map(x->x[0 .<x.<2500],r)[:]
+    r = map(x->x[0 .<x.<=2500],r)[:]
     c = id50[:]
     b = map(x->fill(20.,length(x)),r)
     area_edge = map(x->fill(100.,length(x)),r)
