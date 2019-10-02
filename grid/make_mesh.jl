@@ -2,8 +2,11 @@
 rdata = joinpath(rdata,"sint_nero")
 OUT = [joinpath(rdata,"4_mesh.tsv"),joinpath(rdata,"5_geom.tsv"),joinpath(rdata,"6_wellCon.tsv")]
 xy = collect(Iterators.product(10:20:1000, 10:20:1000))
-wxy = [[250, 250],
-       [750, 750]]
+xy = convert(Array{Tuple{Float64,Float64},2},xy)
+xy = map(x->[x[1],x[2]],xy)[:]
+
+wxy = [[250 250],
+       [750 750]]
 
 make_mesh(xy,OUT[1])
 make_geom(xy,OUT[2])

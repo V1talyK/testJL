@@ -32,9 +32,11 @@ display(plt)
 
 plt = scatterplot(NeS[nh,:],P, xlabel = "Analitic", ylabel = "Nero" )
 
-plt = heatmap(reshape(kh,21,21), xscale=0.01,
-                   yscale=0.01, xoffset=0, colormap=:inferno, height = 21, width = 21);   display(plt);
+plt = heatmap(reshape(kh,50,50), xscale=0.01,
+                   yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);
 
 
 plt = lineplot(0:0.01:1, fsip.(0:0.01:1));
 display(plt)
+
+plt = lineplot(1:50, reshape(kh,50,50)[10,:], title = "Press", name = "Ner", xlabel = "x", ylabel = "P",width = 50,xlim = [0, 50]);

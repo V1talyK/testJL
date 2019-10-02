@@ -25,8 +25,8 @@ function AxyW(xy,wxy,pw)
     F = Axy(xy)
     F0 = Axy.(wxy)
     #Rw = R(xy,rw)
-    OBW = outBnd.(wxy)
-    z = outBnd(xy)
+    OBW = (x->outBnd(x,[0 0; 1000 1000])).(wxy)
+    z = outBnd(xy,[0 0; 1000 1000])
 
     nw = length(wxy)
 
@@ -42,9 +42,20 @@ function AxyW(xy,wxy,pw)
         AZ1[i]=1.
         AX[i] = prod(AZ1)
     end
+    df = Vector(undef,nw)
+    for i=1:nw
+        AZ1[:]=AZ[:]
+        AZ1[i]=1.
+        AZ2 = OBW[i].-OBW;
+        AZ2[i] = 1.
+        df[i] = AZ1[:]./AZ2
+        df[i][isnan.(df[i])].=1.
+        df[i][isinf.(df[i])].=1.
+    end
     #AZ[1:nw+1:nw*nw] .= 1
-
-    DX = z.*AX./OBW./BZ
+    prdf = prod.(df)
+    #DX = z.*AX./OBW./BZ
+    DX = z.*prdf
     Rw = R(xy,wxy,pw,rw)
     B = F -sum((F0 .- Rw).*DX)
     return B
@@ -62,10 +73,10 @@ function Bxy(x)
     return b_out
 end
 
-f0(x) = 10+log(rw/sqrt((x-0.5)^2+0.25))
-f1(x) = 10+log(rw/sqrt((x-0.5)^2+0.25))
-g0(x) = 10+log(rw/sqrt((x-0.5)^2+0.25))
-g1(x) = 10+log(rw/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
+f0(x) = 100;#10+log(rw/sqrt((x-0.5)^2+0.25))
+f1(x) = 100;#10+log(rw/sqrt((x-0.5)^2+0.25))
+g0(x) = 100;#10+log(rw/sqrt((x-0.5)^2+0.25))
+g1(x) = 100;#10+log(rw/sqrt((x-0.5)^2+0.25))#1-(x-0.5).^2
 w0(x) = 1
 
 

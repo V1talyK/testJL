@@ -3,8 +3,8 @@ using Flux, Flux.Tracker, UnicodePlots
 include("pde_fun.jl")
 include("pde_flux.jl")
 
-rw = 0.0005;    #Радиус скважины
-pw = [10,10];         #Забойное давление
+rw = 0.05;    #Радиус скважины
+pw = [50,70];         #Забойное давление
 TD = Tracker.data;
 xy = [[i,j]/20 for i in 0:20, j in 0:20][:] # Сетка
 wxy = [[0.5 0.5],
@@ -14,9 +14,9 @@ pw = [10.];
 wxy = [[0.5 0.5]]
 
 xa=[100,-100];
-xb = [0.,0.5]
+xb = [0.,500.]
 ya = [100,-100]
-yb = [0., 0.5]
+yb = [0., 500.]
 
 train_lap!()
 
@@ -32,7 +32,7 @@ get_hes(x->x[1].^2 +x[2].^3,[1.,2.])
 hes_out = get_hes.(x->m3(x),xy)[220:222]
 get_hes(x->m3(x),xy[1])
 
-
+vcat(xy'...).-wxy[1]'
 
 m1.(xy)
 m3.(xy)
