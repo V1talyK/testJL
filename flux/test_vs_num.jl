@@ -14,10 +14,14 @@ funkh, dkx, dky = funKH(xa,xb,ya,yb)
 
 
 kh = map(x->funkh(x[1]/1000,x[2]/1000),xy)
-plt = heatmap(kh, xscale=0.01,
+plt = heatmap(reshape(kh,50,50), xscale=0.01,
              yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);
 kh = kh
 kh = kh.+0.1
 
 using JLD
 JLD.save(joinpath(rdata,"PPP.jld"),"P",P)
+Pnum = JLD.load("/home/lik/proto/cc_pf/data/sint_nero/PPP.jld")
+Pnum = Pnum["P"]
+
+NeS[:].-Pnum[:,1]

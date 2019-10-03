@@ -5,7 +5,7 @@ m1 = Chain(Dense(2,10,σ),Dense(10,1))
 function M3(xy,wxy,pw)
 
     fun = function m3(x)
-        A  = AxyW(x,wxy,pw)
+        A  = fRBF(x');#AxyW(x,wxy,pw)
         #ia = findall((x[1].==map(x->x[1],xy)) .& (x[2].==map(x->x[2],xy)))
         A.+pde_trialA(x,m1(x))[1]
     end
@@ -16,9 +16,9 @@ m4 = M3(xy,wxy,pw)
 
 ib = map(x-> findall(sum((vcat(xy'...).-x).^2,dims=2)[:].<rw^2)[1],wxy)
 funK, dk_dx, dk_dy = funKH(xa,xb,ya,yb);
-funKH(x) = funK(x[1],x[2])*9. +1.;
-f_dk_dx(x) = dk_dx(x[1],x[2])*9
-f_dk_dy(x) = dk_dy(x[1],x[2])*9
+funKH(x) = funK(x[1],x[2]) .+0.1;
+f_dk_dx(x) = dk_dx(x[1],x[2])
+f_dk_dy(x) = dk_dy(x[1],x[2])
 
 function common_loss(ib)
     kh = funKH.(xy)

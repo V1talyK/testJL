@@ -22,11 +22,11 @@ end
 # end
 
 function AxyW(xy,wxy,pw)
-    F = Axy(xy)
+    F = Axy(xy[613])
     F0 = Axy.(wxy)
     #Rw = R(xy,rw)
     OBW = (x->outBnd(x,[0 0; 1000 1000])).(wxy)
-    z = outBnd(xy,[0 0; 1000 1000])
+    z = outBnd(xy[613],[0 0; 1000 1000])
 
     nw = length(wxy)
 
@@ -46,8 +46,10 @@ function AxyW(xy,wxy,pw)
     for i=1:nw
         AZ1[:]=AZ[:]
         AZ1[i]=1.
-        AZ2 = OBW[i].-OBW;
+        AZ2 = Float64.(OBW[i].-OBW);
         AZ2[i] = 1.
+        AZ2[AZ2.==0] .= 1e-6
+        AZ1[AZ1.==0] .= 1e-6
         df[i] = AZ1[:]./AZ2
         df[i][isnan.(df[i])].=1.
         df[i][isinf.(df[i])].=1.
@@ -55,8 +57,8 @@ function AxyW(xy,wxy,pw)
     #AZ[1:nw+1:nw*nw] .= 1
     prdf = prod.(df)
     #DX = z.*AX./OBW./BZ
-    DX = z.*prdf
-    Rw = R(xy,wxy,pw,rw)
+    DX = z.*prdf./OBW
+    Rw = R(xy[613],wxy,pw,rw)
     B = F -sum((F0 .- Rw).*DX)
     return B
 end
@@ -83,8 +85,9 @@ w0(x) = 1
 outBnd(xy, xy0 = [0 0; 1 1]) = prod(xy'.-xy0)
 
 function pde_trialA(x, NeIn)
-
-    ψ = funB0(x)*prod(pw .-R(x,wxy,pw,rw))*NeIn
+    bnd = [0 1000; 0 1000]
+    x1 = [(x[1]-bnd[1,1])/(bnd[1,2]-bnd[1,1]),(x[2]-bnd[2,1])/(bnd[2,2]-bnd[2,1])]
+    ψ = funB0(x1)*prod(pw .-R(x,wxy,pw,rw))*NeIn
     return ψ
 end
 
@@ -93,7 +96,7 @@ function pde_trialB(x, NeIn)
     return ψ
 end
 
-@inline funB0(x) = prod(x.*(1 .-x))
+@inline funB0(x,bnd = [0 1;0 1]) = prod((bnd[:,1].-x).*(bnd[:,2] .-x))
 @inline funBW(x) = sum(1 .-exp.(-(x.-0.5).^2))/2
 
 psy_trial(net_out,x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
