@@ -19,6 +19,7 @@ function interpByRBF(xy,z)
 end
 
 function test_rbf(np=10;plot = false)
+    #np - число точек для обучения
     xy = rand(np,2);
     xyP = collect(Iterators.partition(xy', 2))
     z = (x->x[1].^2 + x[2].^2)
@@ -38,7 +39,4 @@ function test_rbf(np=10;plot = false)
     return er
 end
 
-test_rbf(100,plot=false)
-
-f1 = interpByRBF(xy[ia,:],z);
-f1(rand(10,2))
+test_rbf(10,plot=false)
