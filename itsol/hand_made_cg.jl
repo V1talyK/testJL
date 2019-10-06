@@ -1,4 +1,8 @@
 using LinearAlgebra, CuArrays, CuArrays.CUSPARSE
+using TimerOutputs
+const to = TimerOutput()
+reset_timer!(to::TimerOutput)
+
 x0 = zeros(size(A,1))
 @time r0 = b-A*x0
 Y = copy(b)
@@ -64,7 +68,7 @@ function cg_cpu(PCG, A,b,maxIt=1000)
     end
 end
 
-cuA = CuArrays.CUSPARSE.CuSparseMatrixCSR(-AP);
+cuA = CuArrays.CUSPARSE.CuSparseMatrixCSR(-A[p,p]);
 cuB = CuArray(b[p])
 CL = cholesky(-A)
 CLU = SparseArrays.sparse(CL.L)';
@@ -90,16 +94,16 @@ function cg_cuda(PCG, cuA,cuB,maxIt=1000)
     rho = [dot(r,z)]
     q = copy(r)
 
-    cg_cuda_iterator!(x,AU1,r,t,z,infoT,info,maxIt,rho,n)
+    cg_cuda_iterator!(x,AU1,r,t,z,p,q,infoT,info,maxIt,rho,n)
     return x
 end
 
-function cg_cuda_iterator!(x,AU1,r,t,z,infoT,info,maxIt,rho,n)
+function cg_cuda_iterator!(x,AU1,r,t,z,p,q,infoT,info,maxIt,rho,n)
     @time @inbounds for i=1:maxIt
         #@timeit to "t" t[:] .= CUSPARSE.sv_solve('T','U',one(Float64),AU1,r,infoT,'O')
-        @timeit to "t1" CUSPARSE.sv_solve!('T','U',one(Float64),AU1,r,t,infoT,'O')
-        r1=copy(r)
-        @timeit to "t2" CUSPARSE.sv2!('T','U',one(Float64),AU1,r1,'O')
+        @timeit to "t1"  CUSPARSE.sv_solve!('T','U',one(Float64),AU1,r,t,infoT,'O')
+        #r1=copy(r)
+        #@timeit to "t2"  CUSPARSE.sv2!('T','U',one(Float64),AU1,r1,'O')
         # r_cpu = Array(r)
         # @timeit to "t_cpu" AU\r_cpu
         @timeit to "z" CUSPARSE.sv_solve!('N','U',one(Float64),AU1,t,z,info,'O')
@@ -107,26 +111,25 @@ function cg_cuda_iterator!(x,AU1,r,t,z,infoT,info,maxIt,rho,n)
         #z = cuCLL'\t
         #global rho
         #rho = dot(r,r)
-        rhop = copy(rho)
-        #rho[1] = dot(r,z)
-        rho[1] = CuArrays.CUBLAS.dot(n,r,1,z,1);
-        @timeit to "if" if i!=1
+        @timeit to "t2" rhop = copy(rho)
+        @timeit to "t3" rho[1] = CuArrays.CUBLAS.dot(n,r,1,z,1);
+        @timeit to "if"         if i!=1
             β = rho[1]/rhop[1]
             #z[:] = z+β*p
             CuArrays.CUBLAS.axpy!(n,β,p,1,z,1) #z[:] = z+β*p
         end
-        p[:] = copy(z)
+        @timeit to "t4" p[:] = copy(z)
         #CuArrays.CUBLAS.cublasDcopy_v2(CuArrays.CUBLAS.handle(),n,r,1,z,1)
         #y = α ∗ op ( A ) ∗ x + β ∗ y
         #q[:] = cuA*p
-        @timeit to "mv" CuArrays.CUSPARSE.mv!('N',one(Float64),cuA,p,zero(Float64),q,'O')
+        @timeit to "mv"         CuArrays.CUSPARSE.mv!('N',one(Float64),cuA,p,zero(Float64),q,'O')
         #temp = dot(p,q)
-        temp = CuArrays.CUBLAS.dot(n,p,1,q,1);
-        α = rho[1]/temp;
+        @timeit to "t5" temp = CuArrays.CUBLAS.dot(n,p,1,q,1);
+        @timeit to "t6" α = rho[1]/temp;
 
         #ak = dr0/dot((A*z0),z0)
-        CuArrays.CUBLAS.axpy!(n,α,p,1,x,1) #x[:] += α*p
-        CuArrays.CUBLAS.axpy!(n,-α,q,1,r,1) #r[:] += -α*q
+        @timeit to "t7" CuArrays.CUBLAS.axpy!(n,α,p,1,x,1) #x[:] += α*p
+        @timeit to "t8" CuArrays.CUBLAS.axpy!(n,-α,q,1,r,1) #r[:] += -α*q
         nrmr = norm(r)
         #println(nrmr)
         #if mod(i,100)==0 println(sum(abs.(cuB-cuA*x))) end

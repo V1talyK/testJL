@@ -22,6 +22,23 @@ x = CuArrays.CuArray(zeros(length(b)));
 function kernel_vadd(a, b, c)
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
     c[i] = a[i] + b[i]
+    return nothing
+end
+
+temp = CuArray(zeros(12))
+function kernel_vprod(a, b, c)
+    i = (blockIdx().x-1) * blockDim().x + threadIdx().x
+    temp[threadIdx().x] = a[i] * b[i]
+
+    syncthreads()
+
+    cacheIndex = threadIdx().x-1
+    c = 0
+    while i<N
+        c+ = a[i] * b[i]
+    end
+     cache[cacheIndex] = temp
+    return nothing
 end
 
 a = round.(rand(Float32, (300, 4)) * 100)
@@ -33,6 +50,8 @@ d_c = similar(d_a)  # output array
 # run the kernel and fetch results
 # syntax: @cuda [kwargs...] kernel(args...)
 @time @cuda threads=12 kernel_vadd(d_a, d_b, d_c)
+v = similar(r)
+@time @cuda threads=12 kernel_vprod(r, z, v)
 
 # CUDAdrv functionality: download data
 # this synchronizes the device
@@ -95,7 +114,10 @@ icfA_CPU = SparseArrays.sparse(c, clm, nz)
 tcpu = UpperTriangular(icfA_CPU)\Array(r)
 t = CuArray(tcpu)
 
-AU = sparse(UpperTriangular(icfA_CPU));
+UT = UpperTriangular(icfA_CPU)
+AU = sparse(UT);
+ia = findall(c.<=clm)
+AU = SparseArrays.sparse(c[ia], clm[ia], nz[ia])
 AU1 = CuArrays.CUSPARSE.CuSparseMatrixCSR(AU);
 
 r_cpu = Array(r)

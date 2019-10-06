@@ -48,7 +48,8 @@ function color_jpl(n::Int64,Ao::Array{<:Signed,1},
     return colors
 end
 
-clr = color_jpl(16610,Ao,Ac,Av)
+n = size(A,1)
+clr = color_jpl(n,Ao,Av,Av)
 
 cuA =  CuArrays.CUSPARSE.CuSparseMatrixCSR(A)
 Av = Array(cuA.nzVal)
