@@ -1,0 +1,45 @@
+const cusparseColorInfo_t = Ptr{Cvoid}
+for (fname,elty) in ((:cusparseScsrcolor, :Float32),
+                     (:cusparseDcsrcolor, :Float64),
+                     (:cusparseCcsrcolor, :ComplexF32),
+                     (:cusparseZcsrcolor, :ComplexF64))
+    @eval begin
+        function csrclr!(A::CuSparseMatrixCSR{$elty},
+                     info::cusparseColorInfo_t)#,
+                     #index::SparseChar)
+            #cutransa = cusparseop(transa)
+            index = 'O'
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            # if transa == 'N'
+            #     chkmvdims(X,n,Y,m)
+            # end
+            # if transa == 'T' || transa == 'C'
+            #     chkmvdims(X,m,Y,n)
+            # end
+            nc = similar(n)
+            clr = similar(n)
+            reord = similar(n)
+            ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint, Ptr{cusparseMatDescr_t},
+                              CuPtr{$elty}, CuPtr{Cint}, CuPtr{Cint}, CuPtr{$elty},
+                              Cint, Cint, Cint, cusparseColorInfo_t),
+                              handle(), m, n, Ref(cudesc), A.nzVal, A.colPtr, A.rowVal,0.8,
+                              nc, clr, reord, info[1])
+            return rnc, clr, reord
+        end
+    end
+end
+
+int                      m,
+int                      nnz,
+const cusparseMatDescr_t descrA,
+const float*             csrValA,
+const int*               csrRowPtrA,
+const int*               csrColIndA,
+const float*             fractionToColor,
+int*                     ncolors,
+int*                     coloring,
+int*                     reordering,
+cusparseColorInfo_t      info)
