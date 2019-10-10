@@ -86,8 +86,12 @@ outBnd(xy, xy0 = [0 0; 1 1]) = prod(xy'.-xy0)
 
 function pde_trialA(x, NeIn)
     bnd = [0 1000; 0 1000]
-    x1 = [(x[1]-bnd[1,1])/(bnd[1,2]-bnd[1,1]),(x[2]-bnd[2,1])/(bnd[2,2]-bnd[2,1])]
-    ψ = funB0(x1)*prod(pw .-R(x,wxy,pw,rw))*NeIn
+    #x1 = [(x[1]-bnd[1,1])/(bnd[1,2]-bnd[1,1]),(x[2]-bnd[2,1])/(bnd[2,2]-bnd[2,1])]
+    #ψ = funB0(x)*prod(pw .-fromWell(x,wxy,pw,rw))*NeIn
+    ψ = funB0(x)*prod(fromWell2(x,wxy))*NeIn
+    #ψ = fun_GU(x)*prod(pw .-R(x,wxy,pw,rw))*NeIn
+    #ψ = funB0(x)*(fRBF0(x')[1])*NeIn
+
     return ψ
 end
 
@@ -103,7 +107,7 @@ psy_trial(net_out,x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
 psy_trial(x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * m1(x)
 
 function get_hes(f,x)
-    dx = 0.001*x
+    dx = 0.001*x;#*ones(length(x))#
     dx[x.==0] .= 0.001
     f2 = 2*f(x);
     A = zeros(eltype(f2),length(x))
@@ -127,14 +131,18 @@ function one_well(xy,rw=0.05)s
     return P
 end
 
-function R(x,wxy,pw,rw=0.05)
+function fromWell(x,wxy,pw,rw=0.05)
     B = zeros(length(pw))
     for i=1:length(pw)
-        B[i] = pw[i] +log(rw/sqrt(sum((x.-wxy[i]).^2) + rw*rw))
+        B[i] = pw[i] -log(rw/(sqrt(sum((x.-wxy[i]).^2)) + rw))
     end
     return B
 end
 
+function fromWell2(x,wxy)
+    B = sum(d2p(hcat(wxy...),x),dims=1)
+    return B'
+end
 
 function loss_flux2()
     hes_out = ForwardDiff.hessian.(x->Tracker.data(m3(x))[1],xy)
@@ -146,20 +154,20 @@ function loss_flux2()
     #Tracker.TrackedReal{Float64}(B)
 end
 
-function funKH(xa,xb,ya,yb)
+function funKH(xa,xb,ya,yb,fun=si)
     if length(xa)>0
-        fsiX = map(y->x->si(x,y[1],y[2]),zip(xa,xb))
+        fsiX = map(y->x->fun(x,y[1],y[2]),zip(xa,xb))
         fsipX = (x->prod(map(f->f(x),fsiX)))
-        fX = (x->sum(map(f->1. -f(x),fsiX)))
+        fX = (x->sum(map(f->f[2]*(1. -f[1](x)),zip(fsiX,xa))))
     else
         fsipX(x) =1;
         fX(x) = 0
     end
 
     if length(ya)>0
-        fsiY = map(y->x->si(x,y[1],y[2]),zip(ya,yb))
+        fsiY = map(y->x->fun(x,y[1],y[2]),zip(ya,yb))
         fsipY = (y->prod(map(f->f(y),fsiY)))
-        fY = (y->sum(map(f->1. -f(y),fsiY)))
+        fY = (y->sum(map(f->f[2]*(1. -f[1](y)),zip(fsiY,ya))))
     else
         fsipY(y) = 1;
         fY(y) = 0
@@ -172,4 +180,20 @@ function funKH(xa,xb,ya,yb)
     return funK, dk_dx, dk_dy
 end
 
-si(x,a,b) = 1/(1+exp(-(a*(x-b))))
+@inline si(x,a,b) = 1/(1+exp(-(a*(x-b))))
+@inline isru(x,a,b) = x/sqrt(1+(a*(x-b))^2)
+
+function makeRBFfromBoundary(pk, pw, bnd,wxy, np=10)
+    dx = bnd[1][2]/np;
+    dy = bnd[2][2]/np;
+    maxX, maxY = bnd[1][2]*0.99, bnd[2][2]*0.99;
+    xy = vcat(hcat(collect(0:dx:maxX),fill(0,np)),
+            hcat(fill(maxX,np), collect(0:dy:maxY)),
+            hcat(collect(maxX:-dx:0),fill(maxY,np)),
+            hcat(fill(0,np), collect(maxY:-dy:0)))
+    z = fill(pk,size(xy,1))
+    xy = vcat(xy,hcat(wxy...)')
+    z = vcat(z,pw)
+    fun = interpByRBF(xy,z,1000);
+    return fun
+end

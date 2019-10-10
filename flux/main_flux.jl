@@ -1,34 +1,39 @@
 #using ForwardDiff
 using Flux, Flux.Tracker, UnicodePlots
 include("pde_fun.jl")
-include("pde_flux.jl")
+include("../grid/rbf.jl")
 
-rw = 0.05;    #Радиус скважины
-pw = [50,70];
-wxy = [[250 250],
-       [750 750]]
+rw = 0.05/1000;    #Радиус скважины
+pw = [50,50,50]/100;
+pk = 1
+wxy = [[250, 250],
+       [510,510],
+       [750, 750]]/1000
 
-        #Забойное давление
-TD = Tracker.data;
-xy = [[i,j]/20 for i in 0:20, j in 0:20][:] # Сетка
-wxy = [[0.5 0.5],
-       [0.25 0.25]]
+       #Забойное давление
+# TD = Tracker.data;
+# xy = [[i,j]/20 for i in 0:20, j in 0:20][:] # Сетка
+# wxy = [[0.5 0.5],
+#       [0.25 0.25]]
+#
+ pw = [50.]/100;
+ wxy = [[0.61, 0.61]]
 
-pw = [10.];
-wxy = [[0.5 0.5]]
+bnd = [[0, 1], [0, 1]]
 
-xa=[100,-100];
+xa=[50,-50]/2;
 xb = [0.,0.5]
-ya = [100,-100]
+ya = [50,-50]/2
 yb = [0., 0.5]
 
+xy = collect(Iterators.product(10:20:1000, 10:20:1000))
+xy = convert(Array{Tuple{Float64,Float64},2},xy)
+xy = map(x->[x[1],x[2]],xy)[:]
+xy = xy/1000
+
+include("pde_flux.jl")
+
 train_lap!()
-
-println(Axy([0.5,0.5]))
-println(b_out([0.5,0.5]))
-b_out(x) = x[2] * sin(pi * x[1]);
-
-(x->w0(x)*(1-funBW(x)))([0.5,0.5])
 
 
 get_hes(x->x[1].^2 +x[2].^3,[1.,2.])
@@ -66,19 +71,6 @@ xy1 = map(x->[(x[1]-bnd[1,1])/(bnd[1,2]-bnd[1,1]),(x[2]-bnd[2,1])/(bnd[2,2]-bnd[
 funB0(xy1)
 
 prod(pw .-R(xy[1],wxy,pw,rw))
-
-dx = 500;
-dy = 500;
-np = Int64(1000/dx)
-xy = vcat(hcat(collect(0:dx:999),fill(0,np)),
-        hcat(fill(999,np), collect(0:dy:999)),
-        hcat(collect(999:-dx:0),fill(999,np)),
-        hcat(fill(0,np), collect(999:-dy:0)))
-z = fill(100,size(xy,1))
-xy = vcat(xy,[250 250;750 750])
-z = vcat(z,pw)
-
-fRBF = interpByRBF(xy,z);
 
 xyg = hcat(map(x->[x[1],x[2]],collect(Iterators.product(0:50:1000,0:50:1000))[:])...)'
 Z = fRBF(xyg)

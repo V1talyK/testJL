@@ -23,7 +23,7 @@ BoS = AxyW.(xy);    BoS = reshape(BoS,nc,nc)
 x_ax = 1:nc;
 nh = Int64.(floor(nc/2)+1)
 P = AnS[nh,:]
-plt = lineplot(x_ax, NeS[:,nh], title = "Press", name = "Ner", xlabel = "x", ylabel = "P",width = 21,xlim = [0, 50]);
+plt = lineplot(x_ax, NeS[:,nh], title = "Press", name = "Ner", xlabel = "x", ylabel = "P",width = 50,xlim = [0, 50]);
 #lineplot!(plt,x_ax,NeS[nh,:], name = "NeS");
 lineplot!(plt,x_ax,P, name = "Analitic");
 #lineplot!(plt,x_ax,BoS[nh,:],name = "AxyW");
@@ -35,6 +35,8 @@ plt = scatterplot(NeS[nh,:],P, xlabel = "Analitic", ylabel = "Nero" )
 plt = heatmap(reshape(Pnum[:,1],50,50), xscale=0.01,
                    yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);
 
+plt = heatmap(reshape(Pnum[:,1],50,50).-clamp.(NeS,60,100), xscale=0.01,
+                  yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);
 
 plt = lineplot(0:0.01:1, fsip.(0:0.01:1));
 display(plt)

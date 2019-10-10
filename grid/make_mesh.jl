@@ -4,7 +4,7 @@ OUT = [joinpath(rdata,"4_mesh.tsv"),joinpath(rdata,"5_geom.tsv"),joinpath(rdata,
 xy = collect(Iterators.product(10:20:1000, 10:20:1000))
 xy = convert(Array{Tuple{Float64,Float64},2},xy)
 xy = map(x->[x[1],x[2]],xy)[:]
-
+xy = xy/1000
 wxy = [[250 250],
        [750 750]]
 

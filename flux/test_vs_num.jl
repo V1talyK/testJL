@@ -14,14 +14,29 @@ funkh, dkx, dky = funKH(xa,xb,ya,yb)
 
 
 kh = map(x->funkh(x[1]/1000,x[2]/1000),xy)
-plt = heatmap(reshape(kh,50,50), xscale=0.01,
-             yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);
 kh = kh
 kh = kh.+0.1
+
+plt = heatmap(reshape(kh,50,50), xscale=0.01,
+             yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);
+
 
 using JLD
 JLD.save(joinpath(rdata,"PPP.jld"),"P",P)
 Pnum = JLD.load("/home/lik/proto/cc_pf/data/sint_nero/PPP.jld")
 Pnum = Pnum["P"]
 
-NeS[:].-Pnum[:,1]
+mean(abs.(NeS[:].-Pnum[:,1]))
+nh = 25
+x_ax = 10:20:1000
+plt = lineplot(x_ax, NeS[:,nh], title = "Press", name = "Ner", xlabel = "x", ylabel = "P",width = 50,xlim = [0, 50]);
+lineplot!(plt,x_ax,reshape(Pnum[:,1],50,50)[:,nh], name = "Num");
+display(plt)
+
+z0 = (x->fRBF(x')[1]).(xy)
+z1 = funB0.(xy)
+zp = (x->prod(pw .-R(x,wxy,pw,rw))).(xy)
+zpp = (x->Tracker.data(pde_trialA(x,m1(x)))[1]).(xy)
+
+plt = heatmap(reshape(z0,50,50), xscale=0.01,
+             yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);
