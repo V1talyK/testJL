@@ -4,10 +4,9 @@ include("pde_fun.jl")
 include("../grid/rbf.jl")
 
 rw = 0.05/1000;    #Радиус скважины
-pw = [50,50,50]/100;
+pw = [50,50]/100;
 pk = 1
 wxy = [[250, 250],
-       [510,510],
        [750, 750]]/1000
 
        #Забойное давление
@@ -33,7 +32,7 @@ xy = xy/1000
 
 include("pde_flux.jl")
 
-train_lap!()
+@time train_lap!()
 
 
 get_hes(x->x[1].^2 +x[2].^3,[1.,2.])

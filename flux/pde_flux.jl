@@ -24,19 +24,19 @@ function common_loss(ib)
     kh = funKH.(xy)
     dkdx = f_dk_dx.(xy)
     dkdy = f_dk_dy.(xy)
+    out = Array{Tuple{Array{Tracker.TrackedReal{Float64},1},Array{Tracker.TrackedReal{Float64},1}},1}(undef,length(xy))
     lf = function loss_flux()
         #hes_out = ForwardDiff.hessian.(x->Tracker.data(m3(x))[1],xy)
         #hes_out = ForwardDiff.hessian.(x->m3(x,TD(m1(x)))[1],xy)
         #hes_out = m3.(xy)#Tracker.gradient.(m3(x))[1],xy)
-        out= get_hes.(x->m3(x),xy)
-        #grad_out, hes_out
+        out .= get_hes.(x->m3(x),xy) #grad_out, hes_out
         dP_dx = map(x->x[1][1],out)
         dP_dy = map(x->x[1][2],out)
 
         d2P_dx2 = map(x->x[2][1],out)
         d2P_dy2 = map(x->x[2][2],out)
         r_part = fun23.(xy)#kh .*
-        l_part = (d2P_dx2 .+ d2P_dy2) + 0*(dkdx.*dP_dx + dkdy.*dP_dx);
+        l_part = kh .*(d2P_dx2 .+ d2P_dy2) + (dkdx.*dP_dx + dkdy.*dP_dx);
         l_part[ib].=0
         B = sum(abs2.(l_part-r_part)) # loss function
         #Tracker.TrackedReal{Float64}(B)
@@ -49,8 +49,8 @@ cb1 = ()->println(loss_flux())
 
 function train_lap!()
     #opt = Descent(0.0001)
-    opt = ADAM(0.1);#opt = Descent(0.0001)
-    data = Iterators.repeated((), 25)
+    opt = ADAM(0.05);#opt = Descent(0.0001)
+    data = Iterators.repeated((), 50)
 
     prm = Flux.params(m1)
     Flux.train!(loss_flux, prm, data, opt, cb = cb1)

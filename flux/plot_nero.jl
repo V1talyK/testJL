@@ -1,5 +1,5 @@
 nc = Int64(floor(sqrt(length(xy))));
-NeS = (x->Tracker.data(m4(x))[1]).(xy);     NeS = reshape(NeS,nc,nc);
+NeS = (x->Tracker.data(m3(x))[1]).(xy);     NeS = reshape(NeS,nc,nc);
 AnS = one_well.(xy,rw);    AnS = reshape(Float64.(AnS),nc,nc)
 
 pl[isnan.(pl)].=0
@@ -17,7 +17,6 @@ plt = heatmap(PyS, xscale=0.1, yscale=0.1, xoffset=0, colormap=:inferno);     di
 
 plt = heatmap(clamp.(NeS,0,1).-AnS, xscale=0.01, yscale=0.01, xoffset=0, colormap=:inferno); display(plt)
 
-NeS = (x->Tracker.data(m3(x))[1]).(xy);     NeS = reshape(NeS,nc,nc);
 BoS = AxyW.(xy);    BoS = reshape(BoS,nc,nc)
 
 x_ax = 1:nc;

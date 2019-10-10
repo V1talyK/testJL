@@ -36,7 +36,8 @@ display(plt)
 z0 = (x->fRBF(x')[1]).(xy)
 z1 = funB0.(xy)
 zp = (x->prod(pw .-R(x,wxy,pw,rw))).(xy)
+zp = (x->prod(1 .-fromWell(x,wxy,rw))).(xy)
 zpp = (x->Tracker.data(pde_trialA(x,m1(x)))[1]).(xy)
 
-plt = heatmap(reshape(z0,50,50), xscale=0.01,
+plt = heatmap(reshape(zp.*z1,50,50), xscale=0.01,
              yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);

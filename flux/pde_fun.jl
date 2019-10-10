@@ -87,8 +87,8 @@ outBnd(xy, xy0 = [0 0; 1 1]) = prod(xy'.-xy0)
 function pde_trialA(x, NeIn)
     bnd = [0 1000; 0 1000]
     #x1 = [(x[1]-bnd[1,1])/(bnd[1,2]-bnd[1,1]),(x[2]-bnd[2,1])/(bnd[2,2]-bnd[2,1])]
-    #ψ = funB0(x)*prod(pw .-fromWell(x,wxy,pw,rw))*NeIn
-    ψ = funB0(x)*prod(fromWell2(x,wxy))*NeIn
+    ψ = funB0(x)*prod(1 .-fromWell(x,wxy,rw))*NeIn
+    #ψ = funB0(x)*prod(fromWell2(x,wxy))*NeIn
     #ψ = fun_GU(x)*prod(pw .-R(x,wxy,pw,rw))*NeIn
     #ψ = funB0(x)*(fRBF0(x')[1])*NeIn
 
@@ -100,7 +100,7 @@ function pde_trialB(x, NeIn)
     return ψ
 end
 
-@inline funB0(x,bnd = [0 1;0 1]) = prod((bnd[:,1].-x).*(bnd[:,2] .-x))
+@inline funB0(x,bnd = [0 1;0 1]) = prod((view(bnd,:,1).-x).*(view(bnd,:,2) .-x))
 @inline funBW(x) = sum(1 .-exp.(-(x.-0.5).^2))/2
 
 psy_trial(net_out,x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
@@ -114,11 +114,13 @@ function get_hes(f,x)
     B = zeros(eltype(f2),length(x))
     xmdx = similar(x)
     xpdx = similar(x)
-    for (i, v) in enumerate(x)
-        xmdx[:] = x; xmdx[i] = x[i] - dx[i]
-        xpdx[:] = x; xpdx[i] = x[i] + dx[i]
-        A[i] = ((f(xpdx)-f(xmdx))/2/dx[i])[1]
-        B[i] = ((f(xmdx)-f2+f(xpdx))./dx[i].^2)[1]
+    @inbounds for (i, v) in enumerate(x)
+        xmdx[:] = x; xmdx[i] = v - dx[i]
+        xpdx[:] = x; xpdx[i] = v + dx[i]
+        fp = f(xpdx);
+        fm = f(xmdx);
+        A[i] = ((fp-fm)/2/dx[i])[1]
+        B[i] = ((fm-f2+fp)./dx[i].^2)[1]
     end
     return A, B
 end
@@ -131,17 +133,17 @@ function one_well(xy,rw=0.05)s
     return P
 end
 
-function fromWell(x,wxy,pw,rw=0.05)
-    B = zeros(length(pw))
-    for i=1:length(pw)
-        B[i] = pw[i] -log(rw/(sqrt(sum((x.-wxy[i]).^2)) + rw))
+function fromWell(x,wxy,rw=0.05)
+    B = zeros(length(wxy))
+    for i=1:length(wxy)
+        B[i] = log(rw/(sqrt(sum((x.-wxy[i]).^2)) + rw))
     end
     return B
 end
 
 function fromWell2(x,wxy)
     B = sum(d2p(hcat(wxy...),x),dims=1)
-    return B'
+    return sqrt.(B')
 end
 
 function loss_flux2()

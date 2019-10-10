@@ -1,5 +1,5 @@
 function funRBF(x,w,xy,ε)
-    r2 = map(i->ε*sum(d2p(x,xy[i,:])),1:size(xy,1))
+    r2 = map(i->ε*sum(d2p(x,view(xy,i,:))),1:size(xy,1))
     fi = sqrt.(1 .+r2)
     return sum(fi.*w)
 end
@@ -16,7 +16,7 @@ function interpByRBF(xy,z,ε = 1)
 
     ϕ = sqrt.(1 .+r2);
     w = ϕ\z;
-    fun(x) = map(i->funRBF(x[i,:],w,xy,ε),1:size(x,1));
+    fun(x) = map(i->funRBF(view(x,i,:),w,xy,ε),1:size(x,1));
     return fun
 end
 
