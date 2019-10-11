@@ -19,14 +19,14 @@ kh = kh.+0.1
 
 plt = heatmap(reshape(kh,50,50), xscale=0.01,
              yscale=0.01, xoffset=0, colormap=:inferno, height = 50, width = 50);   display(plt);
-
+Base.source_path()
 
 using JLD
-JLD.save(joinpath(rdata,"PPP.jld"),"P",P)
-Pnum = JLD.load("/home/lik/proto/cc_pf/data/sint_nero/PPP.jld")
+JLD.save(joinpath(rdata,"PPP1.jld"),"P",P)
+Pnum = JLD.load("/home/lik/Документы//testJL/flux/PPP1.jld")
 Pnum = Pnum["P"]
 
-mean(abs.(NeS[:].-Pnum[:,1]))
+mean(abs.(NeS[:]*100 .-Pnum[:,1]))
 nh = 25
 x_ax = 10:20:1000
 plt = lineplot(x_ax, NeS[:,nh], title = "Press", name = "Ner", xlabel = "x", ylabel = "P",width = 50,xlim = [0, 50]);

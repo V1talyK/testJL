@@ -32,7 +32,7 @@ xy = xy/1000
 
 include("pde_flux.jl")
 
-@time train_lap!()
+@time train_lap!(100)
 
 
 get_hes(x->x[1].^2 +x[2].^3,[1.,2.])

@@ -1,4 +1,4 @@
-m1 = Chain(Dense(2,10,σ),Dense(10,1))
+m1 = Chain(Dense(2,10,σ),Dense(10,10,σ),Dense(10,1))
 fRBF = makeRBFfromBoundary(pk, pw, bnd,wxy)
 fRBF0 = makeRBFfromBoundary(1, 0*pw, bnd,wxy)
 
@@ -35,7 +35,7 @@ function common_loss(ib)
 
         d2P_dx2 = map(x->x[2][1],out)
         d2P_dy2 = map(x->x[2][2],out)
-        r_part = fun23.(xy)#kh .*
+        r_part = fun23.(xy)#
         l_part = kh .*(d2P_dx2 .+ d2P_dy2) + (dkdx.*dP_dx + dkdy.*dP_dx);
         l_part[ib].=0
         B = sum(abs2.(l_part-r_part)) # loss function
@@ -47,10 +47,10 @@ end
 loss_flux = common_loss(ib)
 cb1 = ()->println(loss_flux())
 
-function train_lap!()
+function train_lap!(nIt=50)
     #opt = Descent(0.0001)
     opt = ADAM(0.05);#opt = Descent(0.0001)
-    data = Iterators.repeated((), 50)
+    data = Iterators.repeated((), nIt)
 
     prm = Flux.params(m1)
     Flux.train!(loss_flux, prm, data, opt, cb = cb1)

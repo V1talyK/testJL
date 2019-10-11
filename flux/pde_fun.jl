@@ -107,8 +107,8 @@ psy_trial(net_out,x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * net_out
 psy_trial(x) = Ax(x) .+ x[1] * (1 - x[1]) * x[2] * (1 - x[2]) * m1(x)
 
 function get_hes(f,x)
-    dx = 0.001*x;#*ones(length(x))#
-    dx[x.==0] .= 0.001
+    dx = 0.0001*ones(length(x))#*x;#
+    dx[x.==0] .= 0.0001
     f2 = 2*f(x);
     A = zeros(eltype(f2),length(x))
     B = zeros(eltype(f2),length(x))
