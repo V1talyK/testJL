@@ -11,7 +11,7 @@ CL = cholesky(A)
 
 @time cg_cpu(LUi, A,b,1000)
 
-@time cux3 = IterativeSolvers.cg(cuA, cuB)
+@time cux3 = IterativeSolvers.cg(A, b)
 @time x = cg_cpu(A,b)
 
 function cg_cpu(A,b,maxIt=1000)
@@ -22,14 +22,17 @@ function cg_cpu(A,b,maxIt=1000)
     # @time BLAS.sbmv!(uplo, k, 1, A, x0, 1, Y)
     z0 = copy(r0)
     q = similar(r0)
+    dr0 = dot(r0,r0)
     for i=1:maxIt
-        @timeit to "0" dr0 = dot(r0,r0)
+        #@timeit to "0" dr0 = dot(r0,r0)
         @timeit to "1" mul!(q, A, z0)
         @timeit to "2" temp = dot(q,z0)
         @timeit to "3" ak = dr0/temp
         @timeit to "4" x0.+=ak.*z0
         @timeit to "5" r0.-=ak.*q
-        @timeit to "6" β = dot(r0,r0)/dr0
+                    dr = dot(r0,r0)
+        @timeit to "6" β = dr/dr0
+        dr0 = copy(dr)
         @timeit to "7" z0.= r0.+β.*z0
         #if mod(i,20)==0 println(sum(abs.(b-A*x0))) end
     end

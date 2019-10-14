@@ -1,3 +1,4 @@
+using OpenCL
 const sum_kernel = "
    __kernel void sum(__global const float *a,
                      __global const float *b,
