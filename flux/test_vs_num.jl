@@ -11,9 +11,9 @@ display(plt)
 
 
 funkh, dkx, dky = funKH(xa,xb,ya,yb)
+funkh, dkx, dky = funKH_lin([0.1 1.],[1. 0.1],[0. 1.],[0. 1.])
 
-
-kh = map(x->funkh(x[1]/1000,x[2]/1000),xy)
+kh = map(x->funkh(x[1],x[2]),xy)
 kh = kh
 kh = kh.+0.1
 

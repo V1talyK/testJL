@@ -15,8 +15,12 @@ end
 m3 = M3(xy,wxy,pw)
 
 ib = map(x-> findall(sum((vcat(xy'...).-x').^2,dims=2)[:].<rw^2)[1],wxy)
-funK, dk_dx, dk_dy = funKH(xa,xb,ya,yb);
-funKH(x) = funK(x[1],x[2]) .+0.1;
+# funK, dk_dx, dk_dy = funKH(xa,xb,ya,yb);
+# funKH(x) = funK(x[1],x[2]) .+0.1;
+# f_dk_dx(x) = dk_dx(x[1],x[2])
+# f_dk_dy(x) = dk_dy(x[1],x[2])
+funK, dk_dx, dk_dy = funKH_lin([0.1 1.],[0.1 1.],[0. 1.],[0. 1.])
+funKH(x) = funK(x[1],x[2]);
 f_dk_dx(x) = dk_dx(x[1],x[2])
 f_dk_dy(x) = dk_dy(x[1],x[2])
 
@@ -36,7 +40,7 @@ function common_loss(ib)
         d2P_dx2 = map(x->x[2][1],out)
         d2P_dy2 = map(x->x[2][2],out)
         r_part = fun23.(xy)#
-        l_part = kh .*(d2P_dx2 .+ d2P_dy2) + (dkdx.*dP_dx + dkdy.*dP_dx);
+        l_part = kh .*(d2P_dx2 .+ d2P_dy2) + (dkdx.*dP_dx + dkdy.*dP_dy);
         l_part[ib].=0
         B = sum(abs2.(l_part-r_part)) # loss function
         #Tracker.TrackedReal{Float64}(B)

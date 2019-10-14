@@ -1,4 +1,4 @@
-#using ForwardDiff
+using ForwardDiff
 using Flux, Flux.Tracker, UnicodePlots
 include("pde_fun.jl")
 include("../grid/rbf.jl")
@@ -6,8 +6,8 @@ include("../grid/rbf.jl")
 rw = 0.05/1000;    #Радиус скважины
 pw = [50,50]/100;
 pk = 1
-wxy = [[250, 250],
-       [750, 750]]/1000
+wxy = [[250, 750],
+       [750, 250]]/1000
 
        #Забойное давление
 # TD = Tracker.data;
@@ -18,12 +18,7 @@ wxy = [[250, 250],
  pw = [50.]/100;
  wxy = [[0.61, 0.61]]
 
-bnd = [[0, 1], [0, 1]]
-
-xa=[50,-50]/2;
-xb = [0.,0.5]
-ya = [50,-50]/2
-yb = [0., 0.5]
+bnd, xa, xb, ya, yb = makeModParam()
 
 xy = collect(Iterators.product(10:20:1000, 10:20:1000))
 xy = convert(Array{Tuple{Float64,Float64},2},xy)
@@ -32,7 +27,7 @@ xy = xy/1000
 
 include("pde_flux.jl")
 
-@time train_lap!(100)
+@time train_lap!(50)
 
 
 get_hes(x->x[1].^2 +x[2].^3,[1.,2.])

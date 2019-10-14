@@ -182,6 +182,20 @@ function funKH(xa,xb,ya,yb,fun=si)
     return funK, dk_dx, dk_dy
 end
 
+function funKH_lin(kx,ky,xi,yi)
+    dkx = kx[1]-kx[2]
+    dky = ky[1]-ky[2]
+    dx = xi[1]-xi[2]
+    dy = yi[1]-yi[2]
+
+    funKx(x) = dkx/dx*x+kx[1]-dkx/dx*xi[1];
+    funKy(y) = dky/dy*y+ky[1]-dky/dy*yi[1];
+    funK(x,y) = funKx(x)/2+funKy(y)/2;
+    dk_dx(x,y) = dkx/dx/2#funKy(y)*
+    dk_dy(x,y) = dky/dy/2#funKx(x)*dky/dy
+    return funK, dk_dx, dk_dy
+end
+
 @inline si(x,a,b) = 1/(1+exp(-(a*(x-b))))
 @inline isru(x,a,b) = x/sqrt(1+(a*(x-b))^2)
 
@@ -198,4 +212,14 @@ function makeRBFfromBoundary(pk, pw, bnd,wxy, np=10)
     z = vcat(z,pw)
     fun = interpByRBF(xy,z,1000);
     return fun
+end
+
+function makeModParam()
+    bnd = [[0, 1], [0, 1]]
+
+    xa=[50,-50]/8;
+    xb = [0.,0.5]
+    ya = [50,-50]/8
+    yb = [0.5, 1.]
+    return bnd, xa, xb, ya, yb
 end
