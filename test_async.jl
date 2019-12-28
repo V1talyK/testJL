@@ -18,15 +18,15 @@ function fun4(A,b)
     return x
 end
 
-function fun2(Ab,an,j)
-    local x
+function fun2(A,b,j)
     for i=1:10
         #display(i)
         #APLU=LinearAlgebra.lufact(Ab[1]);
         #A_ldiv_B!(APLU, Ab[2])
         #an[:]=LU\Ab[2];
         #Ab[1]\Ab[2]
-        IterativeSolvers.cg(Ab[1], Ab[2])
+        #IterativeSolvers.cg(Ab[1], Ab[2])
+        cholesky(A);
     end
 end
 
@@ -70,11 +70,15 @@ an2 = copy(an)
 ai = NaN*zeros(Int32,8)
 an = Vector(undef,8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
 at = Vector(undef,8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
+
+
+x = fill(zeros(length(b)),6)
+AA = fill(copy(mA),6)
 @time @inbounds Threads.@threads for i=1:6
     ai[i] = Threads.threadid()
     #if Threads.threadid()==1
     #sleep(0.001)
-    fun2(Ab[i],an[i],i);
+    fun2(AA[i],b,i);
     #end
     #if Threads.threadid()==2
         #fun3(Ab2[i],an2[i],i);
@@ -82,8 +86,8 @@ at = Vector(undef,8); for i=1:8 an[i]=zeros(Int32,length(b)); end;
     #println(i)
 end
 
-@time for i=1:8
-    fun2(Ab[i],an[i],i);
+@time for i=1:6
+    fun2(mA,b,i);
 end
 
 function g(a, n)
