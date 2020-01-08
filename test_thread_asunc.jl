@@ -15,22 +15,35 @@ using Pkg
 Pkg.clone("https://github.com/JuliaSmoothOptimizers/HSL.jl.git")
 
 c = Vector(undef,10);
-for i=1:10
-    c[i] = fun2(i)
+a = Vector(undef,10);
+@time for i=1:10
+    c[i] = @task fun1(i)
 end
 
+a0 = zeros(5);
 for i=1:10
-    a[i] = fun1()
+    a[i] = fun2(a0,c[i],i)
+    a0.=a[i]
 end
 
-function fun1(tsk)
-    wait(tsk);
+function fun2(a0,tsk,i)
+    println(i)
+    #wait(tsk);
+    schedule(tsk)
     b = fetch(tsk);
-    return b+1
+    #println(-i)
+    return a0.+1 .+b
 end
 
 
-function fun2(i)
+function fun1(i)
     sleep(2)
-    return ones(5)*i
+    return ones(5)*i/10
 end
+
+
+
+istaskstarted(c[1])
+schedule(c[1]);
+istaskdone.(c)
+fetch.(c)
