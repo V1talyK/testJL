@@ -4,7 +4,8 @@ function funRBF(x,w,xy,ε)
     return sum(fi.*w)
 end
 
-@inline d2p(x0,x) = (x0.-x).^2
+@inline d2p(x0,x::Array{<:Real,1}) = (x0.-x).^2
+@inline d2p(x0,x::Array{<:Real,2}) = (y->d2p(x0,y')).(eachslice(x,dims=1))
 
 function interpByRBF(xy,z,ε = 1)
     #Возвращает функцию интерполянт обученную на входных данных
