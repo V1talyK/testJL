@@ -13,6 +13,7 @@ end
 fe = spzeros(Int64,nt,nt);
 up = zeros(Int64,nt,nt);
 cf = spzeros(Int64,nt,nt);
+gt = spzeros(Int64,nt,nt);
 cmb = CartesianIndex.(zeros(Int64,nl),zeros(Int64,nl));
 rc = Vector(undef,0)
 for r=1:nt
@@ -23,6 +24,9 @@ for r=1:nt
             up[r,c] = At[c]
             cf[r,c] = CartesianIndex(fe[r,c],up[r,c]) != cmb[c-r+1]
             cmb[c-r+1] = CartesianIndex(fe[r,c],up[r,c])
+            if cf[r,c]!=0
+                gt[r,c] = c-r+1
+            end
         end
     end
 end
