@@ -24,7 +24,7 @@ for r=1:nt
             up[r,c] = At[c]
             cf[r,c] = CartesianIndex(fe[r,c],up[r,c]) != cmb[c-r+1]
             cmb[c-r+1] = CartesianIndex(fe[r,c],up[r,c])
-            if cf[r,c]!=0
+            if cf[r,c]!=1
                 gt[r,c] = c-r+1
             end
         end
