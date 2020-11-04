@@ -1,7 +1,7 @@
 using Pkg, SparseArrays
 ENV["JULIA_PARDISO"]="/home/lik/temp"
 ENV["MKLROOT"] = "/opt/intel/compilers_and_libraries_2019.0.117/linux/mkl"
-ENV["PARDISO_LIC_PATH"] = "/home/lik/proto"
+ENV["PARDISO_LIC_PATH"] = "/home/lik/temp"
 Pkg.build("Pardiso")
 using Pardiso
 Pardiso.show_build_log()
@@ -14,9 +14,9 @@ BLAS.vendor()
 ps = PardisoSolver()
 
 A = sparse(rand(10, 10))
-B = rand(10, 2)
+B = rand(10)
 X = zeros(length(b))
-Pardiso.solve(ps, A, b)
+Pardiso.solve(ps, A, B)
 solve(ps, A, B)
 @time A\B
 

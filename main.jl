@@ -1,4 +1,4 @@
-using JLD, SparseArrays
+using JLD, SparseArrays, LinearAlgebra
 r=dirname(Base.source_path());
 d = JLD.load(joinpath(r,"myfile.jld"));
 d = JLD.load(joinpath(r,"myfile200k.jld"));
@@ -18,6 +18,23 @@ mA = -A;
 
 
 @time x = A\b;
+
+ACL = cholesky(mA);
+ALDL = ldlt(mA);
+ALU = lu(mA);
+AQR = qr(mA);
+
+x = zero(b);
+@time ALU\b;
+@time ACL\b;
+@time ALDL\b;
+@time AQR\b;
+
+bp = b[ACL.p]
+L = sparse(ACL.L)
+@time mys!(x,L,bp);
+5500017021487
+
 using AlgebraicMultigrid
 @time begin
     for i=1:100
