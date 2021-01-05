@@ -8,7 +8,7 @@ using CUSPARSE
 using Pkg
 Pkg.build("CUDAnative")
 Pkg.add("CUDAdrv")
-Pkg.add("CuArrays")
+Pkg.add("CuArrays")]
 Pkg.build("CUDAdrv")
 Pkg.build("CuArrays")
 
