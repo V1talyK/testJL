@@ -1,4 +1,4 @@
-using JLD, SparseArrays
+using JLD, SparseArrays, LinearAlgebra
 r=dirname(Base.source_path());
 d = JLD.load(joinpath(r,"myfile.jld"));
 d = JLD.load(joinpath(r,"myfile200k.jld"));
