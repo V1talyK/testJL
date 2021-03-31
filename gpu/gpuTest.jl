@@ -6,15 +6,15 @@ Pkg.build("CUDArt")
 using CUSPARSE
 
 using Pkg
-Pkg.build("CUDAnative")
+Pkg.build("CUDA")
 Pkg.add("CUDAdrv")
-Pkg.add("CuArrays")
 Pkg.build("CUDAdrv")
 Pkg.build("CuArrays")
 
 using CUDAdrv, CUDAnative, CuArrays, CuArrays.CUSPARSE
 using Test
 using CuArrays, CuArrays.CUSPARSE
+using CUDA
 cuA =  CuArrays.CUSPARSE.CuSparseMatrixCSR(A);
 cuB = CuArrays.CuArray(b)
 x = CuArrays.CuArray(zeros(length(b)));
