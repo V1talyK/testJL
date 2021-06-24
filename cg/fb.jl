@@ -44,10 +44,10 @@ function nmn!(a,b,c)
     axpy!(c, b, a)
 end
 
-@btime $x .= $CL\$b
+@btime $x .= $ACL\$b
 
-LL = LowerTriangular(sparse(CL.L))
-bp = copy(b[CL.p])
+LL = LowerTriangular(sparse(ACL.L))
+bp = copy(b[ACL.p])
 UU = copy(transpose(LL))
 
 
@@ -56,7 +56,7 @@ y2 = copy(y)
 y1 = copy(y)
 
 @btime x1 = forward_substitution!(UU, y1)
-@btime $x2 = forward_substitution1!($UU, $y2)
+@btime x2 .= forward_substitution1!(UU, y2)
 @profiler forward_substitution1!(UU, y2)
 
 sum(abs,x[CL.p].-x1)
