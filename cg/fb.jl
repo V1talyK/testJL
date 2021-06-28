@@ -14,7 +14,8 @@ function backward_substitution!(U, y::AbstractVector)
     y
 end
 
-function forward_substitution!(L, y::AbstractVector)
+function forward_substitution!(y, L, b::AbstractVector)
+    y = copy(b)
     @inbounds for col = 1 : L.data.n - 1
         for idx = L.data.colptr[col] : L.data.colptr[col + 1] - 1
             y[L.data.rowval[idx]] -= L.data.nzval[idx] * y[col]
@@ -63,3 +64,37 @@ sum(abs,x[CL.p].-x1)
 
 @btime ldiv!($y,$LL,$bp)
 @btime ldiv!($x1,$UU,$y)
+
+
+function frw_sb(x, S, b)
+    x = zeros(length(b))
+    @inbounds for col = 1 : S.n - 1
+        for idx = S.colptr[col] : S.colptr[col + 1] - 1
+            if idx == 1
+                x[1] = b[1]/S.nzval[1]
+            else
+                x[S.rowval[idx]] -= S.nzval[idx] * x[col]
+            end
+
+        end
+    end
+
+    y
+end
+
+
+x[1] = b[1]/S.nzval[1]
+x[3] = b[3] - S.nzval[2] * x[1]
+x[5] = b[5] - S.nzval[3] * x[1]
+
+x[2] = b[2]/S.nzval[4]
+x[5] = x[5] - S.nzval[5]*x[2]
+
+x[3] = x[3]/S.nzval[6]
+
+x[4] = b[4]/S.nzval[7]
+
+x[5] = x[5]/S.nzval[8]
+x[6] = b[6] - S.nzval[9]*x[5]
+
+x[6] = x[6]/S.nzval[9]
