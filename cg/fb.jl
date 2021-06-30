@@ -66,35 +66,37 @@ sum(abs,x[CL.p].-x1)
 @btime ldiv!($x1,$UU,$y)
 
 
-function frw_sb(x, S, b)
-    x = zeros(length(b))
-    @inbounds for col = 1 : S.n - 1
-        for idx = S.colptr[col] : S.colptr[col + 1] - 1
-            if idx == 1
-                x[1] = b[1]/S.nzval[1]
+function frw_sb!(x, S, b)
+    x .= 0;
+    @inbounds for col = 1:S.n
+        idx = S.colptr[col] : S.colptr[col + 1] - 1
+        #println(idx," ",S.rowval[idx])
+        @inbounds for (k,v) in enumerate(idx)
+            #println(j)
+            j = S.rowval[v]
+            if j == col
+                x[j] = (b[j] + x[j])/S.nzval[idx[k]]
             else
-                x[S.rowval[idx]] -= S.nzval[idx] * x[col]
+                x[j] -=  S.nzval[idx[k]] * x[col]
             end
-
         end
     end
-
-    y
+    return x
 end
 
 
 x[1] = b[1]/S.nzval[1]
-x[3] = b[3] - S.nzval[2] * x[1]
-x[5] = b[5] - S.nzval[3] * x[1]
+x[3] = - S.nzval[2] * x[1]
+x[5] = - S.nzval[3] * x[1]
 
 x[2] = b[2]/S.nzval[4]
 x[5] = x[5] - S.nzval[5]*x[2]
 
-x[3] = x[3]/S.nzval[6]
+x[3] = (b[3] + x[3])/S.nzval[6]
 
 x[4] = b[4]/S.nzval[7]
 
-x[5] = x[5]/S.nzval[8]
-x[6] = b[6] - S.nzval[9]*x[5]
+x[5] = (b[5] + x[5])/S.nzval[8]
+x[6] = - S.nzval[9]*x[5]
 
-x[6] = x[6]/S.nzval[9]
+x[6] = (b[6] + x[6])/S.nzval[9]

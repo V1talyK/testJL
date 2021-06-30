@@ -12,10 +12,10 @@ Lt = copy(LL');
 p = ACL.p;
 bp = b[p];
 LL[:,p]
-@time y .= LL\bp;
-@time x .= Lt\y;
+@time y = LL\bp;
+@time x = Lt\y;
 
-sum(abs,x.-x0)
+sum(abs,x.-x0[p])
 
 
 @btime ldiv!(y, LL,bp)
