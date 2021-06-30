@@ -66,7 +66,7 @@ sum(abs,x[CL.p].-x1)
 @btime ldiv!($x1,$UU,$y)
 
 
-function frw_sb!(x, S, b)
+function frw_sb0!(x, S, b)
     x .= 0;
     @inbounds for col = 1:S.n
         idx = S.colptr[col] : S.colptr[col + 1] - 1
@@ -85,9 +85,44 @@ function frw_sb!(x, S, b)
 end
 
 
+function frw_sbt!(x, S, b)
+    x .= 0;
+    @inbounds for col = 1:S.n
+        idx = S.colptr[col]+1 : S.colptr[col + 1] - 1
+        #println(idx," ",S.rowval[idx])
+        x[col] = (b[col] + x[col])/S.nzval[S.colptr[col]]
+        v1 = view(S.rowval,idx)
+        #for i in eachindex(idx,v1)
+             #j = S.rowval[v]
+        @tturbo x[v1] .= view(x,v1) .- view(S.nzval,idx) .* x[col]
+        #fg.(view(x,v1),view(S.nzval,idx),x[col])
+        #end
+        # idx2 = view(idx,2:length(idx))
+        # row = view(S.rowval,idx2)
+        # x[row] = view(x,row) .- S.nzval[idx2] .* x[col]
+    end
+    return x
+end
+
+function frw_sb!(x, S, b)
+    x .= 0;
+    @fastmath @inbounds for col = 1:S.n
+        idx = S.colptr[col]+1 : S.colptr[col + 1] - 1
+        #println(idx," ",S.rowval[idx])
+        x[col] = (b[col] + x[col])/S.nzval[S.colptr[col]]
+        #v1 = view(S.rowval,idx)
+        @simd for v in idx
+             x[S.rowval[v]] -=  S.nzval[v] * x[col]
+        end
+    end
+    return x
+end
+
+
+
 x[1] = b[1]/S.nzval[1]
-x[3] = - S.nzval[2] * x[1]
-x[5] = - S.nzval[3] * x[1]
+x[3] = x[3] - S.nzval[2] * x[1]
+x[5] = x[5] - S.nzval[3] * x[1]
 
 x[2] = b[2]/S.nzval[4]
 x[5] = x[5] - S.nzval[5]*x[2]
@@ -97,6 +132,14 @@ x[3] = (b[3] + x[3])/S.nzval[6]
 x[4] = b[4]/S.nzval[7]
 
 x[5] = (b[5] + x[5])/S.nzval[8]
-x[6] = - S.nzval[9]*x[5]
+x[6] = x[6] - S.nzval[9]*x[5]
 
 x[6] = (b[6] + x[6])/S.nzval[9]
+
+#--------------------------#
+x[6] = b[6]/UU.nzval[9]
+x[5] = x[5] - UU.nzval[8] * x[6]
+
+x[5] = (b[5] + x[5]) /UU.nzval[8]
+x[2] = x[2] - UU.nzval[7] * x[5]
+x[1] = x[1] - UU.nzval[6] * x[5]
