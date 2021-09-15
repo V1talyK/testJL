@@ -13,6 +13,8 @@ Lt = copy(LL');
 p = ACL.p;
 bp = b[p];
 LL[:,p]
+@time y = LL\bp;
+@time x = Lt\y;
 @time y1 .= LL\bp;
 @time x .= Lt\y1;
 

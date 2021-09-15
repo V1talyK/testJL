@@ -47,3 +47,33 @@ end
 r = rand(1:length(b),length(b)*100)
 c = zeros(length(b)*100)
 @btime $c .= $b[$r];
+
+
+function mycopyt!(a,b,subs,ia)
+    @turbo for i ∈ eachindex(a,subs)
+        a[i] = b[subs[i],ia]
+    end
+end
+
+subs = rand(1:length(b),length(b)*6)
+a = zeros(length(subs))
+a1 = zeros(length(subs))
+
+@btime cpt($a,$b,$subs)
+bv = view(b,subs);
+@btime copyto!($a,$bv);
+
+cpt(a,b,subs);
+copyto!(a1,bv);
+
+propertynames(vdGr[1])
+vdGr[1].indices[1]
+
+function cptv(dest,srcv)
+    @turbo thread = 4 for i ∈ eachindex(dest,srcv.indices[1])
+        a[i] = srcv.parent[srcv.indices[1][i]]
+    end
+end
+
+@btime @turbo c.=a.*b;
+@btime @turbo c32.=a32.*b32;
