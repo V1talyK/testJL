@@ -1,28 +1,4 @@
-function backward_substitution!(U, y::AbstractVector)
-    n = size(U,1)
-    @inbounds for col = n : -1 : 1
 
-        # Substitutions
-        for idx = U.data.colptr[col + 1] - 1 : -1 : U.data.colptr[col] + 1
-            y[col] -= U.data.nzval[idx] * y[U.data.rowval[idx]]
-        end
-
-        # Final answer for y[col]
-        y[col] /= U.data.nzval[U.data.colptr[col]]
-    end
-
-    y
-end
-
-function forward_substitution!(L, y::AbstractVector)
-    @inbounds for col = 1 : L.data.n - 1
-        for idx = L.data.colptr[col] : L.data.colptr[col + 1] - 1
-            y[L.data.rowval[idx]] -= L.data.nzval[idx] * y[col]
-        end
-    end
-
-    y
-end
 
 
 function forward_substitution1!(L, y::AbstractVector)
@@ -52,6 +28,7 @@ UU = copy(transpose(LL))
 
 
 @btime y = backward_substitution!(LL, bp)
+forward_substitution!(LL, bp)
 y2 = copy(y)
 y1 = copy(y)
 
@@ -59,7 +36,7 @@ y1 = copy(y)
 @btime x2 .= forward_substitution1!(UU, y2)
 @profiler forward_substitution1!(UU, y2)
 
-sum(abs,x[CL.p].-x1)
+sum(abs,x[ACL.p].-x1)
 
 @btime ldiv!($y,$LL,$bp)
 @btime ldiv!($x1,$UU,$y)

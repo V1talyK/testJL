@@ -2,7 +2,7 @@ module MyApp
 
 using CSV, DataFrames
 
-Base.@ccallable function julia_main()::Cint
+function julia_main()
     try
         real_main()
     catch

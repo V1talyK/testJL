@@ -1,7 +1,8 @@
 using LinearAlgebra, BenchmarkTools
-LinearAlgebra.BLAS.set_num_threads(1)
+LinearAlgebra.BLAS.set_num_threads(4)
 
 ACL = cholesky(mA);
+ALU = lu(mA)
 
 @btime x0 = ACL\b
 
@@ -12,10 +13,10 @@ Lt = copy(LL');
 p = ACL.p;
 bp = b[p];
 LL[:,p]
-@time y .= LL\bp;
-@time x .= Lt\y;
+@time y1 .= LL\bp;
+@time x .= Lt\y1;
 
-sum(abs,x.-x0)
+sum(abs,x.-x0[p])
 
 
 @btime ldiv!(y, LL,bp)
@@ -73,4 +74,3 @@ x = zeros(length(b))
 LL = LowerTriangular(sparse(ALU.L))
 UU = LowerTriangular(sparse(ALU.U))
 @btime ldiv!(x, UU, b)
-ALU = lu(mA)
