@@ -1,5 +1,0 @@
-gcc -DJULIAC_PROGRAM_LIBNAME=\"sys.so\" -o MyApp MyApp.c sys.so -O2 -fPIE \
-    -I'/home/lik/juliaX/julia-1.6.0/include/julia' \
-    -L'/home/lik/juliaX/julia-1.6.0/lib' \
-    -ljulia \
-    -Wl,-rpath,'/home/lik/juliaX/julia-1.6.0/lib:$ORIGIN'

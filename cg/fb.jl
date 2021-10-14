@@ -13,6 +13,7 @@ UU = copy(transpose(LL))
 
 
 @btime y = backward_substitution!(LL, bp)
+forward_substitution!(LL, bp)
 y2 = copy(y)
 y1 = copy(y)
 
@@ -20,7 +21,7 @@ y1 = copy(y)
 @btime x2 .= forward_substitution1!(UU, y2)
 @profiler forward_substitution1!(UU, y2)
 
-sum(abs,x[CL.p].-x1)
+sum(abs,x[ACL.p].-x1)
 
 @btime ldiv!($y,$LL,$bp)
 @btime ldiv!($x1,$UU,$y)

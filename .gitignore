@@ -1,3 +1,4 @@
 # Specify filepatterns you want git to ignore.
 *.so
 *.o
+cmpl/MyApp*

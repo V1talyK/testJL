@@ -1,5 +1,5 @@
 using IterativeSolvers, Preconditioners, IncompleteLU, LinearAlgebra
-LinearAlgebra.BLAS.set_num_threads(1) #set_num_threads
+LinearAlgebra.BLAS.set_num_threads(4) #set_num_threads
 
 @time for i=1:100
     x0 = A\b;
@@ -14,9 +14,16 @@ end
 x11 = copy(x1)
 @time IterativeSolvers.gmres!(x0, A, b; Pl = p.L);
 
-@time x2 = IterativeSolvers.cg(A, b);
+@btime x2 = IterativeSolvers.cg(A, b);
+x2.=0
+@btime IterativeSolvers.cg!($x2, $mA, $b);
+@btime IterativeSolvers.cg!(x2, mA, b; Pl = p);
+
 @time x2 = IterativeSolvers.cg(A, b; Pl = LUi);
-@time IterativeSolvers.cg!(x2,A, b; Pl = LUi);
+
+@btime IterativeSolvers.cg!($x2,$mA, $b; Pl = $LUi);
+@profiler IterativeSolvers.cg!(x2,mA, b; Pl = LUi);
+IterativeSolvers.cg!(x2,mA, b; Pl = LL);
 
 @time for i=1:50s
     x3 = IterativeSolvers.cg(A, b; Pl = LUi);
@@ -64,9 +71,9 @@ sum(abs.(x0-x11))
 sum(abs.(x0-x2))
 sum(abs.(x0-x4))
 
-@time p = CholeskyPreconditioner(A, 1)
+@time p = CholeskyPreconditioner(mA, 2)
 @time p = AMGPreconditioner(A)
-@time LUi = ilu(A, τ = 0.5)
+@time LUi = ilu(mA, τ = 0.000001)
 
 x6 = @time jacobi(A, b; maxiter=1000, Pl = LUi)
 sum(abs.(x0-x6))

@@ -1,0 +1,9 @@
+version: '3.7'
+services:
+  julia-docker:
+    image: 14087d26ef80
+    ports:
+      - '7776:22'
+      - '7777:7777'
+    volumes:
+      - './:/opt/project'
