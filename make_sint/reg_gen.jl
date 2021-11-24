@@ -15,7 +15,7 @@ for (k,v) in enumerate(Iterators.product(well_name, vd))
 end
 
 
-writeToFile("operating_mode_11",[getindex.(D,1),getindex.(D,2),getindex.(D,3),getindex.(D,4)])
+writeToFile("operating_mode_1",[getindex.(D,1),getindex.(D,2),getindex.(D,3),getindex.(D,4)])
 
 
 #operating_mode_1 - база
@@ -45,4 +45,4 @@ for (kt,vt) in enumerate(vd)
     push!(D,"")
 end
 
-writeToFile("export/operating_mode_1_v2",[D])
+writeToFile("export/operating_mode_1",[D])
