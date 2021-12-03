@@ -1,5 +1,5 @@
 using IterativeSolvers, Preconditioners, IncompleteLU, LinearAlgebra, BenchmarkTools
-LinearAlgebra.BLAS.set_num_threads(4) #set_num_threads
+LinearAlgebra.BLAS.set_num_threads(1) #set_num_threads
 
 @btime x0 = A\b;
 @btime ACL = cholesky(mA)
