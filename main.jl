@@ -19,15 +19,12 @@ mA = -A;
 
 @time x = A\b;
 using AlgebraicMultigrid
-@time begin
-    for i=1:100
-        ml = ruge_stuben(A);
-        AlgebraicMultigrid.solve(ml, b);
-    end
-end
+
+@btime ml = ruge_stuben(A);
+@btime AlgebraicMultigrid.solve!(x, ml, b);
 
 @time p = aspreconditioner(ml)
-@time c = cg(A, b, Pl = p)
+@btime cg!(x2, A, b, Pl = p)
 @time solve(ml, b, tol=1e-5);
 
 @time x1 = mA\b;

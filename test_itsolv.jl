@@ -1,10 +1,17 @@
-using IterativeSolvers, Preconditioners, IncompleteLU, LinearAlgebra
-LinearAlgebra.BLAS.set_num_threads(4) #set_num_threads
+using IterativeSolvers, Preconditioners, IncompleteLU, LinearAlgebra, BenchmarkTools
+LinearAlgebra.BLAS.set_num_threads(1) #set_num_threads
 
-@time for i=1:100
-    x0 = A\b;
-end
-@time x0 = A\b;
+@btime x0 = A\b;
+@btime ACL = cholesky(mA)
+@btime x0 = ACL\b;
+
+@btime x2 = IterativeSolvers.cg(mA, b);
+x2.=0
+@btime IterativeSolvers.cg!($x2, $mA, $b);
+@btime IterativeSolvers.cg!(x2, mA, b; maxiter = 1, log = true, Pl = LUi);
+@btime IterativeSolvers.cg!(x2, mA, b; maxiter = 100, log = true);
+@btime IterativeSolvers.cg!(x2, mA, b; Pl = LUi);
+
 @time for i=1:50
     x0lu = LUf\b;
 end
@@ -14,10 +21,10 @@ end
 x11 = copy(x1)
 @time IterativeSolvers.gmres!(x0, A, b; Pl = p.L);
 
-@btime x2 = IterativeSolvers.cg(A, b);
-x2.=0
-@btime IterativeSolvers.cg!($x2, $mA, $b);
-@btime IterativeSolvers.cg!(x2, mA, b; Pl = p);
+
+@btime IterativeSolvers.jacobi!(x2, mA, b; maxiter=10)
+
+
 
 @time x2 = IterativeSolvers.cg(A, b; Pl = LUi);
 
