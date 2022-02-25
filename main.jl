@@ -1,4 +1,4 @@
-using JLD, SparseArrays
+using JLD, SparseArrays, BenchmarkTools, LinearAlgebra
 r=dirname(Base.source_path());
 d = JLD.load(joinpath(r,"myfile.jld"));
 d = JLD.load(joinpath(r,"myfile200k.jld"));
@@ -15,7 +15,7 @@ A = SparseArrays.sparse(c, A.rowval, A.nzval)
 #A = convert(SparseArrays.SparseMatrixCSR{Float64},A)
 b=d["b"];
 mA = -A;
-
+SparseArrays.sparse!
 
 @time x = A\b;
 using AlgebraicMultigrid

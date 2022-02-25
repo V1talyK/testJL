@@ -1,6 +1,7 @@
 using LinearAlgebra, BenchmarkTools, SuiteSparse
 
 ACL = cholesky(mA)
+x0 = similar(b)
 @btime $x0 .= $ACL\$b
 
 @btime CL = make_CL_in_julia(ACL);
