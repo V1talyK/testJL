@@ -28,6 +28,7 @@ FROM default._ccord_data_60e400887ddd740040cf4645_ch_scheme_60e40b687ddd740040cf
 x_train = getindex.(data,9)
 y_train = getindex.(data,14)
 
+opt = Momentum(0.01, 0.9)
 
 model = Chain(Dense(1377, 500),Dense(500, 8, σ))
 model(x_train[1])
@@ -40,7 +41,7 @@ for (k,v) in enumerate(zip(x_train, y_train))
 end
 
 parameters = Flux.params(model)
-for i = 1:20
+for i = 1:3
   train!(loss, parameters, data[1:400], opt)
   #println(loss(data[i][1],data[i][2]))
 end

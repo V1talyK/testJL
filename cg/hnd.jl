@@ -1,3 +1,4 @@
+using LinearAlgebra
 
 function CG_hand!(x,A,b)
     x .= 0
