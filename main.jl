@@ -33,7 +33,20 @@ using AlgebraicMultigrid
 @time for i=1:1
     x3=LUf\b;
 end
-@time CL=cholesky(-A);
+@time CL=cholesky(mA);
+@time CL\b;
+
+
+@time CL = factorize(mA)
+@time cholesky!(CL,mA)
+
+@time CL = ldlt(mA)
+@time ldlt!(CL,mA)
+
+@time CL = qr(mA)
+@time CL = lu(mA)
+@time lu!(CL,mA)
+
 @time for i=1:1
     x2 = CL\b;
 end
