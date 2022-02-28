@@ -63,10 +63,11 @@ function hcho1(i,L,Li,Lj,val,j,fl)
         fl[1:j] = view(L,1:j,j).!=0
         fl[1:j] = Li[1:j].!=0
         s = 0
+        ifl = findall(fl[1:j])
         if any(fl)
-            sd = view(L,:,j)[fl]
-            df = Li[fl]
-            s = LinearAlgebra.BLAS.dot(df,sd)
+            sd = copy(view(L,ifl,j))
+            df = copy(view(Li,ifl))
+            s = LinearAlgebra.BLAS.dot(j,df,1,sd,1)
         end
         s = val - s
 

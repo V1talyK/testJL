@@ -1,10 +1,12 @@
-using JLD, SparseArrays, BenchmarkTools, LinearAlgebra
-n = 1000
-A = -sprand(n,n,0.2)
+using JLD, SparseArrays, BenchmarkTools, LinearAlgebra,CuthillMcKee
+n = 10
+A = -sprand(n,n,0.1)
 A = A + A'
 rc = CartesianIndex.(1:n,1:n)
 A[rc].=-sum(A,dims=2)[:].+1
-
+p = symrcm(A)
+A = A[:,p]
+A = A[p,:]
 b = zeros(n); b[1:4:end].=1
 x0 = A\b
 
@@ -38,3 +40,13 @@ copyto!(a,Rdest,vec(b),Rsrc)
 
 A.colptr
 A.rowval
+
+r = zeros(Int64,0)
+c = ones(Int64,1)
+for i = 1:n
+    v = A.colptr[i]:A.colptr[i+1]-1
+    append!(r,minimum(A.rowval[v]):i)
+    push!(c,length(r)+1)
+end
+L = sprandn(n,n,0.1)
+L = SparseMatrixCSC(n,n,c,r,ones(length(r)))
