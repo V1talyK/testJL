@@ -1,6 +1,6 @@
 using JLD, SparseArrays, BenchmarkTools, LinearAlgebra,CuthillMcKee
-n = 10
-A = -sprand(n,n,0.1)
+n = 10000
+A = -sprand(n,n,0.0001)
 A = A + A'
 rc = CartesianIndex.(1:n,1:n)
 A[rc].=-sum(A,dims=2)[:].+1
@@ -12,6 +12,7 @@ x0 = A\b
 
 
 L = zeros(n,n)
+L.=0
 Li = zeros(n)
 Lj = zeros(n)
 a = zeros(n)
@@ -48,5 +49,5 @@ for i = 1:n
     append!(r,minimum(A.rowval[v]):i)
     push!(c,length(r)+1)
 end
-L = sprandn(n,n,0.1)
-L = SparseMatrixCSC(n,n,c,r,ones(length(r)))
+#L = sprandn(n,n,0.1)
+L = SparseMatrixCSC(n,n,c,r,zeros(length(r)))
