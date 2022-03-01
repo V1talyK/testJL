@@ -21,6 +21,7 @@ a = zeros(n)
 @time hcho(L,A,Li,Lj,n,a)
 @btime hcho($L,$A,$Li,$Lj,$n,$a)
 @profiler hcho(L,A,Li,Lj,n,a)
+@code_warntype hcho(L,A,Li,Lj,n,a)
 
 y = L'\b;
 x1 = L\y;
