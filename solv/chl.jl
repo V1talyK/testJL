@@ -31,7 +31,7 @@ A.colptr
 function hcho(L,A,Li::Vector{Float64},Lj::Vector{Float64},n,a)
     Li1 = zeros(n)
     for i = 1:n
-        Li.*=0.0
+        Li=L[:,i]
         idx = A.colptr[i] : A.colptr[i + 1] - 1
         idx2 = L.colptr[i] : L.colptr[i + 1] - 1
 
@@ -42,28 +42,11 @@ function hcho(L,A,Li::Vector{Float64},Lj::Vector{Float64},n,a)
         end
 
         @inbounds for j in idx2
-
+            Li = L[:,i]
             idx3 = L.colptr[L.rowval[j]] : L.colptr[L.rowval[j] + 1] - 1
             m = length(idx3)
-            #Lj = view(L.nzval,idx3)
-            #Lj.=0
-            #Li1.=0
             Rdest = CartesianIndices((1:length(idx3)))
             Rsrc = CartesianIndices((idx3,),)
-            #copyto!(Lj,Rdest,L.nzval,Rsrc)
-            copy!(view(Lj,1:length(idx3)),view(L.nzval,idx3))
-
-            #Lj = view(L,1:L.rowval[j],L.rowval[j])
-            #println(i,"_",j)
-            #println("---")
-            #sd = view(L.rowval,idx3)
-            #Rsrc = CartesianIndices((sd,))
-            for (k,v) in enumerate(idx3)
-                Li1[k] = Li[L.rowval[v]]
-            end
-            #Li1[1:length(idx3)] .= Li[view(L.rowval,idx3)]
-            #copy!(view(Li1,1:length(idx3)),view(Li,sd))
-            #copyto!(Li1,Rdest,L.nzval,Rsrc)
             sd = L.rowval[j]
             sdf = a[L.rowval[j]]
             hcho1(i,L,Li,Lj,sdf,sd,idx3,idx2,m);
@@ -72,25 +55,29 @@ function hcho(L,A,Li::Vector{Float64},Lj::Vector{Float64},n,a)
     return nothing
 end
 
-function hcho1(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li::Vector{Float64},
-        Lj::Vector{Float64},val::Float64,j::Int64,idx3::UnitRange{Int64},idx2,m::Int64)
+function hcho1(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li,
+        Lj,val::Float64,j::Int64,idx3::UnitRange{Int64},idx2,m::Int64)
         s=0
-        Li.=0
-        Lj.=0
-        Li[L.rowval[idx3]] = L.nzval[idx3]
-        Lj[L.rowval[idx2]] = L.nzval[idx2]
-        u = intersect(L.rowval[idx3],L.rowval[idx2])
+        #Li.=0
+        Lj = L[:,j]
+        #Li[view(L.rowval,idx3)] = view(L.nzval,idx3)
+        #Lj[view(L.rowval,idx2)] = view(L.nzval,idx2)
+        # u = intersect(L.rowval[idx3],L.rowval[idx2])
         for k in 1:j
             #@inbounds s+=L.nzval[k[1]]*Li[L.rowval[k[2]]]
-            @inbounds s+=Li[k]*Lj[k]
+            #@inbounds s+=Li[k]*Lj[k]
+            #@inbounds s+=Li[k]*Lj[k]
         end
-        s=0
-        for k in idx3
-            if L.rowval[k] in L.rowval[idx2]
-            #@inbounds s+=L.nzval[k[1]]*Li[L.rowval[k[2]]]
-                @inbounds s+=L.nzval[k]*L.nzval[idx2[L.rowval[idx2].==L.rowval[k]]]
-            end
-        end
+        s = dot(Li[1:j],Lj[1:j])
+        # s=0
+        # for k = idx3
+        #     for k1 = idx2
+        #     @inbounds if isequal(L.rowval[k], L.rowval[k1])
+        #     #@inbounds s+=L.nzval[k[1]]*Li[L.rowval[k[2]]]
+        #         s+=L.nzval[k]*L.nzval[k1]
+        #     end
+        #     end
+        # end
         # for k in 1:j
         #     @inbounds s+=L[k,i]*L[k,j]
         # end
@@ -110,6 +97,6 @@ function hcho1(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li::Vector{Float64},
         else
             L[j,i] = s / L[j,j];
         end
-        Li[j] = L[j,i]
+        #Li[j] = L[j,i]
         return nothing
 end

@@ -1,6 +1,6 @@
 using JLD, SparseArrays, BenchmarkTools, LinearAlgebra,CuthillMcKee
-n = 10000
-A = -sprand(n,n,0.0001)
+n = 1000
+A = -sprand(n,n,0.001)
 A = A + A'
 rc = CartesianIndex.(1:n,1:n)
 A[rc].=-sum(A,dims=2)[:].+1
@@ -53,3 +53,8 @@ for i = 1:n
 end
 #L = sprandn(n,n,0.1)
 L = SparseMatrixCSC(n,n,c,r,zeros(length(r)))
+
+VV = SparseVector(10,[1,3,7],[1,2,3])
+
+L1 = L[:,j]
+L1.
