@@ -12,6 +12,7 @@ x0 = A\b
 
 
 L = zeros(n,n)
+n = A.n
 L.=0
 Li = zeros(n)
 Lj = zeros(n)
