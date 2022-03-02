@@ -51,7 +51,7 @@ function hcho(L,A,Li::Vector{Float64},Lj::Vector{Float64},n,a)
             Rdest = CartesianIndices((1:length(idx3)))
             Rsrc = CartesianIndices((idx3,),)
             #copyto!(Lj,Rdest,L.nzval,Rsrc)
-            #copy!(view(Lj,1:length(idx3)),view(L.nzval,idx3))
+            copy!(view(Lj,1:length(idx3)),view(L.nzval,idx3))
 
             #Lj = view(L,1:L.rowval[j],L.rowval[j])
             #println(i,"_",j)
@@ -59,28 +59,46 @@ function hcho(L,A,Li::Vector{Float64},Lj::Vector{Float64},n,a)
             #sd = view(L.rowval,idx3)
             #Rsrc = CartesianIndices((sd,))
             for (k,v) in enumerate(idx3)
-                #Li1[k] = Li[L.rowval[v]]
+                Li1[k] = Li[L.rowval[v]]
             end
             #Li1[1:length(idx3)] .= Li[view(L.rowval,idx3)]
             #copy!(view(Li1,1:length(idx3)),view(Li,sd))
             #copyto!(Li1,Rdest,L.nzval,Rsrc)
             sd = L.rowval[j]
             sdf = a[L.rowval[j]]
-            hcho1(i,L,Li,Li1,sdf,sd,idx3,idx2,m);
+            hcho1(i,L,Li,Lj,sdf,sd,idx3,idx2,m);
         end
     end
     return nothing
 end
 
 function hcho1(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li::Vector{Float64},
-        Li1::Vector{Float64},val::Float64,j::Int64,idx3::UnitRange{Int64},idx2,m::Int64)
+        Lj::Vector{Float64},val::Float64,j::Int64,idx3::UnitRange{Int64},idx2,m::Int64)
         s=0
-        for k in zip(idx3,idx2)
-            @inbounds s+=L.nzval[k[1]]*L.nzval[k[2]]
+        Li.=0
+        Lj.=0
+        Li[L.rowval[idx3]] = L.nzval[idx3]
+        Lj[L.rowval[idx2]] = L.nzval[idx2]
+        u = intersect(L.rowval[idx3],L.rowval[idx2])
+        for k in 1:j
+            #@inbounds s+=L.nzval[k[1]]*Li[L.rowval[k[2]]]
+            @inbounds s+=Li[k]*Lj[k]
         end
-        println(L.nzval[idx2].-Li[L.rowval[idx2]])
-        println()
-        println("__________")
+        s=0
+        for k in idx3
+            if L.rowval[k] in L.rowval[idx2]
+            #@inbounds s+=L.nzval[k[1]]*Li[L.rowval[k[2]]]
+                @inbounds s+=L.nzval[k]*L.nzval[idx2[L.rowval[idx2].==L.rowval[k]]]
+            end
+        end
+        # for k in 1:j
+        #     @inbounds s+=L[k,i]*L[k,j]
+        # end
+        # println(L.nzval[idx3])
+        # println(L.nzval[idx2])
+        # println(Vector(L[1:j,i]).*Vector(L[1:j,j]))
+        # #println()
+        # println("__________")
         #s = LinearAlgebra.BLAS.dot(m,Lj,1,Li1,1)
         #a1 = Lj.*cLi
         #s = reduce(+,a1)
