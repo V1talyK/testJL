@@ -42,7 +42,7 @@ function hcho(L,A,Li::Vector{Float64},Lj::Vector{Float64},n,a)
         end
 
         @inbounds for j in idx2
-            Li = L[:,i]
+            Li = view(L,:,i)
             idx3 = L.colptr[L.rowval[j]] : L.colptr[L.rowval[j] + 1] - 1
             m = length(idx3)
             Rdest = CartesianIndices((1:length(idx3)))
@@ -59,7 +59,7 @@ function hcho1(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li,
         Lj,val::Float64,j::Int64,idx3::UnitRange{Int64},idx2,m::Int64)
         s=0
         #Li.=0
-        Lj = L[:,j]
+        Lj = view(L,:,j)
         #Li[view(L.rowval,idx3)] = view(L.nzval,idx3)
         #Lj[view(L.rowval,idx2)] = view(L.nzval,idx2)
         # u = intersect(L.rowval[idx3],L.rowval[idx2])
@@ -68,7 +68,7 @@ function hcho1(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li,
             #@inbounds s+=Li[k]*Lj[k]
             #@inbounds s+=Li[k]*Lj[k]
         end
-        s = dot(Li[1:j],Lj[1:j])
+        s = dot(view(Li,1:j),view(Lj,1:j))
         # s=0
         # for k = idx3
         #     for k1 = idx2
