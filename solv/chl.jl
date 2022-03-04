@@ -100,3 +100,23 @@ function hcho1(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li,
         #Li[j] = L[j,i]
         return nothing
 end
+
+function chol_fr(A,L)
+    for i = 1:A.n
+        L[i,i] = sqrt(A[i, i])
+        for j = i+1:n
+            L[j,i] = L[j,i]/L[i,i]
+        end
+        for k=i+1:n
+            for j = k:n
+                L[j,k] = A[j,k] - L[j,i]*L[k,i]
+            end
+        end
+    end
+end
+
+chol_fr(A,L1)
+
+y = L1\b;
+x2 = L1'\y;
+sum(abs,x0.-x2)

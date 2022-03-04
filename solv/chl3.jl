@@ -11,14 +11,14 @@ b = zeros(n); b[1:4:end].=1
 x0 = A\b
 
 
-L = zeros(n,n)
+L1 = zeros(n,n)
 n = A.n
 L.=0
 Li = zeros(n)
 Lj = zeros(n)
 a = zeros(n)
 #Rdest = CartesianIndices(1:n)
-
+println(1)
 @time hcho(L,A,Li,Lj,n,a)
 @btime hcho($L,$A,$Li,$Lj,$n,$a)
 @profiler hcho(L,A,Li,Lj,n,a)
@@ -58,3 +58,11 @@ VV = SparseVector(10,[1,3,7],[1,2,3])
 
 L1 = L[:,j]
 L1.
+
+
+L.=0
+@time hcho3(L,A,Li,Lj,n,a)
+
+y = L'\b;
+    x1 = L\y;
+    sum(abs,x0.-x1)
