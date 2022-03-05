@@ -1,37 +1,36 @@
-function hcho3(L,A,Li::Vector{Float64},Lj::Vector{Float64},n,a)
-    AA = A.*A'
+function chol11(L,A,n)
     for i = 1:n
-        Li=L[:,i]
-        idx = A.colptr[i] : A.colptr[i + 1] - 1
-        idx2 = L.colptr[i] : L.colptr[i + 1] - 1
-        a.=0
-        for j in idx
-            a[A.rowval[j]] = A.nzval[j]
-        end
-
-        @inbounds for j in idx2
-            Li = L[:,i]
-            idx3 = L.colptr[L.rowval[j]] : L.colptr[L.rowval[j] + 1] - 1
-            m = length(idx3)
-            sd = L.rowval[j]
-            sdf = a[L.rowval[j]]
-            hcho2(i,L,Li,Lj,sdf,sd,idx3,idx2,m, AA);
+        idx1 = L.colptr[i] : L.colptr[i + 1] - 1
+        for j in view(L.rowval,idx1)
+            idx2 = L.colptr[j] : L.colptr[j + 1] - 1
+            v = view(L.rowval,idx2)
+            ia = indexin(view(L.rowval,idx1),v)
+            ia = ia[.!isnothing.(ia)]
+            s = 0
+            k1=0
+            for k in 1:length(ia)
+                k1+=1
+                s += L.nzval[idx1[ia[k]]]*L.nzval[idx2[k1]]
+                #s += L[k,i]*L.nzval[idx2[k1]]
+            end
+            s = A[j,i] - s
+            if i == j
+                L[i,j] = sqrt(s);
+            else
+                L[j,i] = (s / L[j,j]);
+            end
         end
     end
-    return nothing
 end
 
-function hcho2(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li,
-        Lj,val::Float64,j::Int64,idx3::UnitRange{Int64},idx2,m::Int64, AA)
-        Lj = L[:,j]
-        s = sum(AA[1:j,i])
-        s = val - s
 
-        if i == j
-            L[j,i] = sqrt(s);
-        else
-            L[j,i] = s / L[j,j];
-        end
-        #Li[j] = L[j,i]
-        return nothing
+@time chol11(L,A,n)
+@profiler  chol11(L,A,n)
+@btime begin
+    L.=0
+    chol11($L,$A,$n)
 end
+
+y = L'\b;
+    x1 = L\y;
+    sum(abs,x0.-x1)

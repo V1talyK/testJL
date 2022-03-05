@@ -72,7 +72,7 @@ function hcho(L,A,Li::Vector{Float64},Lj::Vector{Float64},n,a)
 end
 
 function hcho1(i::Int64,L::SparseMatrixCSC{Float64, Int64},Li,
-        Lj,val::Float64,j::Int64,idx3::UnitRange{Int64},idx2,m::Int64)
+        Lj,val::Float64,j::Int64,jj,idx3::UnitRange{Int64},idx2,m::Int64)
         s=0
         #Li.=0
         #Lj = view(L,:,j)
