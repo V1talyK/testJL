@@ -2,3 +2,4 @@
 *.so
 *.o
 cmpl/MyApp*
+make_sint/export*
