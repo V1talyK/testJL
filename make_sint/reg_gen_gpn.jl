@@ -42,8 +42,16 @@ for (kt,vt) in enumerate(vd)
     push!(D,"/")
     push!(D,"")
     push!(D,"WCONINJE")
-    for (k,v) in enumerate(well_inj_name)
+    for (k,v) in enumerate(vcat(well_inj_name, well_hor_inj_name))
         push!(D,"$v WATER  OPEN  RATE  10000  1* $(BHPT[k+11,kt])  /")
+    end
+    push!(D,"/")
+    push!(D,"/")
+    push!(D,"")
+
+    push!(D,"WCONINJE")
+    for (k,v) in enumerate(well_gas_inj_name)
+        push!(D,"$v GAS  OPEN  BHP  1*  1* $(BHPT[k+14,kt])  /")
     end
     push!(D,"/")
     push!(D,"/")
