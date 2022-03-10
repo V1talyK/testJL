@@ -8,7 +8,7 @@ well_hor_inj_name = "WINJG3"
 well_gas_inj_name = collect("GINJ$i" for i = 1:2)
 well_name = vcat(well_prod_name, well_inj_name, well_hor_inj_name, well_gas_inj_name)
 
-vd = Date(2011,01,01):Dates.Month(1):Date(2030,12,01);
+vd = Date(2021,01,01):Dates.Month(1):Date(2040,12,01);
 
 BHPT = zeros(length(well_name),length(vd));
 
