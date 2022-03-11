@@ -28,6 +28,7 @@ writeToFile("$rexp/operating_mode_gpn_1",[getindex.(D,1),getindex.(D,2),getindex
 #operating_mode_3 - снижение закачки (понижение забойки на наг.)
 #operating_mode_4 - отключение половины доб. скв.
 #operating_mode_5 - отключение наг. скв.
+BHPT=round.(BHPT,digits=2)
 D = Vector(undef,0)
 for (kt,vt) in enumerate(vd)
     tmp = "$(vt)"

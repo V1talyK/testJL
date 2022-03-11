@@ -36,3 +36,6 @@ end
 @inline getStr(v::Array{Float64,1}) = "$v"
 @inline getStr(v::Array{<:Signed,1}) = "$v"
 #@inline getVal(v::Nothing) = "\\N"
+function mlin(ts)
+    return collect((ts.-ts[1])./(ts[end]-ts[1]))
+end

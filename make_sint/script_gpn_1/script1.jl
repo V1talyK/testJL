@@ -14,10 +14,13 @@ BHPT[wg2,:] .= 1;
 BHPT[wg3,:] .= 1;
 #1-2 год
 for iw=wg1
-    BHPT[iw,iw*2:24] .= Pw_prod+5;
+    ts = iw*2:24
+    BHPT[iw,ts] .= Pw_prod.+10 .-10 .*mlin(ts);
 end
 #3-4 год
-BHPT[wg1,25:48] .= Pw_prod+10;
+for iw=1:length(wg1)
+    BHPT[wg1[iw],25:48] .= Pw_prod .+wg1[iw] .+ 10. *mlin(25:48);
+end
 for iw=1:length(wg2)
     BHPT[iw, 24+(iw*4):48] .= Pw_inj;
 end
@@ -29,7 +32,8 @@ for iw=length(wg3)
 end
 
 #7-8 год
-BHPT[wg1,73:96] .= Pw_prod+20;
+BHPT[wg1,73:96] .= (Pw_prod.+20 .*mlin(73:96))';
+BHPT[wg1[6:end],76:96] .= (Pw_prod.-10 .*mlin(76:96))';
 BHPT[wg2,73:96] .= Pw_inj+5;
 BHPT[wg3,73:96] .= Pw_inj+10;
 #9-10 год
@@ -49,14 +53,16 @@ BHPT[wg1,169:192] .= Pw_prod;
 BHPT[wg2,169:192] .= Pw_inj;
 BHPT[wg3,169:192] .= Pw_inj-5;
 #17-20 год
-BHPT[wg1,193:240] .= Pw_prod+15;
+BHPT[wg1,193:240] .= (Pw_prod.+15 .*mlin(193:240))';
 BHPT[wg2,193:240] .= Pw_inj;
-BHPT[wg3,193:240] .= Pw_inj-20;
+BHPT[wg3,193:240] .= (Pw_inj.-20 .*mlin(193:240))';
 
 #Отключения
 BHPT[1,49:55] .= 500;
 BHPT[3,25:72] .= 500;
 BHPT[7,25:84] .= 500;
-BHPT[13,37:120] .= 500;
+BHPT[13,37:120] .= 1;
 BHPT[2,120:180] .= 500;
 BHPT[13,140:150] .= 1;
+
+BHPT[4,:] .= 185;
