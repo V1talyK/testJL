@@ -18,6 +18,8 @@ mA = -A;
 SparseArrays.sparse!
 
 @time x = A\b;
+sb = sparse(b)
+@time x = A\sb;
 using AlgebraicMultigrid
 
 @btime ml = ruge_stuben(A);
@@ -35,6 +37,8 @@ using AlgebraicMultigrid
 end
 @time CL=cholesky(mA);
 @time CL\b;
+@time CL\sb;
+@profiler for i=1:100 CL\sb; end
 
 
 @time CL = factorize(mA)
