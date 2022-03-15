@@ -5,7 +5,7 @@ using BenchmarkTools
 
 import SuiteSparse.CHOLMOD: Sparse, Dense, Factor, C_Dense, C_Factor, C_Sparse, SuiteSparse_long
 import SuiteSparse.CHOLMOD: common_struct, common_supernodal, common_nmethods, change_factor!, set_print_level, defaults
-import SuiteSparse.CHOLMOD: VTypes, @cholmod_name, fact_, cholesky!, CHOLMOD_A
+import SuiteSparse.CHOLMOD: VTypes, @cholmod_name, fact_, cholesky!, CHOLMOD_A, allocate_dense
 import SparseArrays: getcolptr, getrowval
 
 function supercholesky(A::Sparse; shift::Real=0.0, check::Bool = true,
@@ -110,9 +110,47 @@ x = similar(b)
 @time cholesky!(ACL, sA)
 
 
-x = zeros(10)
-xd = Dense(x)
-xd[1]
+x = zeros(100)
+xd = Dense(x);
+
 
 pp = pointer(xd)
 unsafe_store!(pp, 2.,1)
+
+T = promote_type(eltype(x), Float64)
+d = allocate_dense(size(x, 1), size(x, 2), stride(x, 2), T)
+
+s = unsafe_load(pointer(d))
+for (i, c) in enumerate(eachindex(x))
+    unsafe_store!(Ptr{T}(s.x), x[c], i)
+end
+
+unsafe_copyto!(pp, x, 1)
+
+function foo!(xd,x)
+  T = eltype(xd)
+  GC.@preserve xd begin
+    s = unsafe_load(pointer(xd));
+    pt = Ptr{T}(s.x)
+    @inbounds for (i, c) in enumerate(eachindex(x))
+        #@time x[c];
+        unsafe_store!(pt, x[c], i);
+    end
+  end
+end
+
+x.=rand(100)
+@btime $xd =  Dense($x);
+@btime foo!($xd,$x);
+@btime bar($x,$xd)
+
+
+function bar(x::Vector{Float64},xd::Dense)
+  T = eltype(xd)
+  GC.@preserve xd begin
+  s = unsafe_load(pointer(xd));
+  pt = Ptr{T}(s.x)
+  k = 1:length(x)
+  unsafe_store!.(pt, x, k);
+  end
+end
