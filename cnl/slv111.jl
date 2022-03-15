@@ -142,15 +142,15 @@ end
 x.=rand(100)
 @btime $xd =  Dense($x);
 @btime foo!($xd,$x);
-@btime bar($x,$xd)
+@time foo!(xd,x);
+@btime bar($x,$xd,$k)
 
-
-function bar(x::Vector{Float64},xd::Dense)
+k = 1:length(x)
+function bar(x::Vector{Float64},xd::Dense,k)
   T = eltype(xd)
   GC.@preserve xd begin
   s = unsafe_load(pointer(xd));
   pt = Ptr{T}(s.x)
-  k = 1:length(x)
   unsafe_store!.(pt, x, k);
   end
 end
