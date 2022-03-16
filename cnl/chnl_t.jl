@@ -34,13 +34,21 @@ end
 @btime foo($x,$CL8)
 
 
-ch = Channel{Any}(4)
+ch1 = Channel{Any}(3)
+k=0
+f2() = f1(ch1)
 ts = @task begin
-    for item in ch
+    for item in ch1
         thr_id = Threads.threadid()
         println(thr_id)
         println(item)
+        k+=1
     end
 end
 
-put!(ch,1)
+ts = @task f2()
+schedule(ts)
+yield()
+put!(ch1,2)
+istaskstarted(ts)
+istaskdone(ts)
