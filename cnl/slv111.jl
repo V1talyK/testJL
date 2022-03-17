@@ -132,9 +132,9 @@ function foo!(xd,x)
   GC.@preserve xd begin
     s = unsafe_load(pointer(xd));
     pt = Ptr{T}(s.x)
-    @inbounds for (i, c) in enumerate(eachindex(x))
+    @inbounds @simd for i = 1:length(x)
         #@time x[c];
-        unsafe_store!(pt, x[c], i);
+        unsafe_store!(pt, x[i], i);
     end
   end
 end
