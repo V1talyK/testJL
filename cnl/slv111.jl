@@ -110,7 +110,7 @@ x = similar(b)
 @time cholesky!(ACL, sA)
 
 
-x = zeros(100)
+x = zeros(10000)
 xd = Dense(x);
 
 
@@ -139,11 +139,14 @@ function foo!(xd,x)
   end
 end
 
-x.=rand(100)
+x.=rand(10000)
 @btime $xd =  Dense($x);
 @btime foo!($xd,$x);
 @time foo!(xd,x);
 @btime bar($x,$xd,$k)
+@btime PF.copyto!(xd,x)
+x2 = rand(10000,2)
+PF.copyto!(xd,view(x2,:,1))
 
 k = 1:length(x)
 function bar(x::Vector{Float64},xd::Dense,k)
