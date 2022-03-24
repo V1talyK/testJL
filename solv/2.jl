@@ -42,6 +42,7 @@ xtt = similar(btt)
 
 @btime $xtt.=$ALU\$btt;
 
+using SuiteSparse
 import SuiteSparse.CHOLMOD: Sparse, Dense, Factor, C_Dense, C_Factor, C_Sparse, SuiteSparse_long
 import SuiteSparse.CHOLMOD: common_struct, common_supernodal, common_nmethods, change_factor!, set_print_level, defaults
 import SuiteSparse.CHOLMOD: VTypes, @cholmod_name, fact_, cholesky!, CHOLMOD_A
@@ -49,11 +50,23 @@ import SuiteSparse.CHOLMOD: VTypes, @cholmod_name, fact_, cholesky!, CHOLMOD_A
 
 
 T = Float64
-X = [Dense(Array{T}(undef, nc+nw)) for i in 1:nth]
+X = [Dense(Array{T}(undef, length(b))) for i in 1:nth]
 Eref = [Ref(Ptr{C_Dense{T}}(C_NULL)) for i in 1:nth]
 Yref = [Ref(Ptr{C_Dense{T}}(C_NULL)) for i in 1:nth]
+B = [Dense(b) for i in 1:nth]
 
+@btime fg($X, $Yref, $Eref, $ACLT, $B)
 
+function fg(X, Yref, Eref, ACLT, B)
+  @inbounds Threads.@threads for n=1:100
+    thr_id = Threads.threadid()
+    sam_solve!(X[thr_id], Yref[thr_id], Eref[thr_id], ACLT[thr_id], B[thr_id])
+  end
+end
+
+common_struct[3] = fill(0xff, common_size)
+common_struct[1][1] = 0x01
+common_struct[2][1]
 
 function sam_solve!(X::Dense{Tv}, Yref::Ref{Ptr{C_Dense{Tv}}}, Eref::Ref{Ptr{C_Dense{Tv}}}, F::Factor{Tv}, B::Dense{Tv}) where Tv<:VTypes
   # Pointer to pre-allocated dense matrix
