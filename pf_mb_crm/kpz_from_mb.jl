@@ -22,7 +22,7 @@ XLSX.openxlsx(rfile1, enable_cache=false) do f
               # r is a `SheetRow`, values are read using column references
               rn = XLSX.row_number(r) # `SheetRow` row number
               dd1[k] = Date(r[4])
-              kpz1[k] = r[8]
+              kpz1[k] = r[10]
               qz1[k] = r[2]
               gi1[k] = parse(Int64,r[3])
             end
