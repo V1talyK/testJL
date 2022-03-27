@@ -111,3 +111,22 @@ function copyto!(dest::Dense{T},src::Vector{T}) where {T<:AbstractFloat}
     end
   end
 end
+
+
+AA = make_CL_in_julia(ACL, 4)
+@btime zer(xt,AA,bt);
+@btime zerT(xt,AA,bt);
+
+function zer(xx,AA,bb)
+  for i=1:100
+    thr_id = Threads.threadid()
+    back_slash_slvr!(xx[thr_id],AA,bb[thr_id])
+  end
+end
+
+function zerT(xx,AA,bb)
+  Threads.@threads for i=1:100
+    thr_id = Threads.threadid()
+    back_slash_slvr!(xx[thr_id],AA,bb[thr_id])
+  end
+end
