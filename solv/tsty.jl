@@ -8,22 +8,22 @@ end
 
 function ldiv_cl!(x::Vector{Float64},
                   CL::NamedTuple{(:L, :U, :p, :x_temp), Tuple{SparseMatrixCSC{Float64, Int64}, SparseMatrixCSC{Float64, Int64}, Vector{Int64}, Vector{Vector{Float64}}}},
-                  b::Vector{Float64}, zS)
+                  b::Vector{Float64})
     @inbounds bp = view(b,CL.p)
     #@inbounds bp = b[CL.p]
     #@inbounds xp = view(x,CL.p)
     @inbounds xp = x[CL.p]
     x_temp = CL.x_temp[Threads.threadid()]
-    forward_substit!(x_temp,CL.L, bp,zS)
+    forward_substit!(x_temp,CL.L, bp)
     backward_substit!(xp,CL.U, x_temp)
     #invpermute!(x,CL.p)
 end
 
-function forward_substit!(x, S, b, zS)
+function forward_substit!(x, S, b)
     x .= 0;
     sc1 = S.colptr[1]
-    sr = zeros(Int64,length(x))
-    @inbounds for col = 1:S.n
+    #sr = zeros(Int64,length(x))
+    @inbounds @fastmath for col = 1:S.n
         sc2 = S.colptr[col+1]
         idx = sc1+1 : sc2 - 1
         #idx = sc1+oneunit(sc1) : sc2 - oneunit(sc2)
@@ -34,11 +34,12 @@ function forward_substit!(x, S, b, zS)
         x[col] = xc
         setindex!(x,xc,col)
         sc1 = sc2
-        @inbounds sr=view(S.rowval,idx)
+        #@inbounds sr=view(S.rowval,idx)
 
 
         for (k,v) in enumerate(idx)
-             foo2!(v,S,x,xc,sr,k)
+             #foo2!(v,S,x,xc)
+             bar(v,S,x,xc)
         end
     end
 end
@@ -46,18 +47,16 @@ end
 function foo2!(v::Int64,
               S::SparseMatrixCSC{Float64, Int64},
               x::Vector{Float64},
-              xc::Float64,
-              sr,
-              k)
+              xc::Float64)
     #y = S.nzval[v] * x[col];
     @inbounds z = S.nzval[v]
     @fastmath y = z * xc;
-    #@inbounds i = S.rowval[v]
-    @inbounds i = sr[k]
+    @inbounds i = S.rowval[v]
+    #@inbounds i = sr[k]
     #po = pointer(S.rowval)
     #i = unsafe_load(po, v)
     @inbounds z = getindex(x,i)
-    z -= y
+    @fastmath z -= y
     @inbounds setindex!(x,z,i)
     return nothing
 end
@@ -80,7 +79,7 @@ end
 
 function backward_substit!(x, UU, b)
     x .= 0;
-    @fastmath @inbounds for col = UU.n:-1:1
+    @inbounds @fastmath for col = UU.n:-1:1
         idx = UU.colptr[col + 1]-2 :-1 : UU.colptr[col]
         #println(idx," ",S.rowval[idx])
         xc = x[col]
@@ -88,11 +87,12 @@ function backward_substit!(x, UU, b)
         x[col] = xc
 
         for v in idx
-            foo1!(v,UU,x,xc)
+            #foo1!(v,UU,x,xc)
+            bar(v,UU,x,xc)
         end
     end
 end
 
 function bar(v,UU,x,xc)
-    x[UU.rowval[v]] -=  UU.nzval[v] * xc
+    @inbounds @fastmath x[UU.rowval[v]] -=  UU.nzval[v] * xc
 end
