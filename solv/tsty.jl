@@ -84,12 +84,9 @@ function forward_substit!(x, S, b, invS)
         sc1 = sc2
         #@inbounds sr=view(S.rowval,idx)
 
-         @turbo for i ∈ eachindex(idx)
-         #for v in idx
-             #foo2!(v,S,x,xc,sr,k)
-             v = idx[i]
-             c1 = foo1!(v,S,x,xc)
-        end
+         for v in idx
+             foo1!(v,S,x,xc)
+         end
     end
 end
 
@@ -150,7 +147,6 @@ function backward_substit!(x, UU, b)
         xc = x[col]
         xc = (b[col] + xc)/UU.nzval[UU.colptr[col+1]-1]
         x[col] = xc
-
         for v in idx
             #foo1!(v,UU,x,xc)
             bar(v,UU,x,xc)
