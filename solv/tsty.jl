@@ -42,12 +42,13 @@ function ldiv_cl!(x::Vector{Float64},
 end
 
 function ldiv_cl!(x::Vector{Float32},
-                      CL::NamedTuple{(:L, :U, :p, :x_temp, :y_temp),
+                      CL::NamedTuple{(:L, :U, :p, :x_temp, :y_temp, :invS),
                         Tuple{SparseMatrixCSC{Float32, Int64},
                         SparseMatrixCSC{Float32, Int64},
                         Vector{Int64},
                         Vector{Vector{Float32}},
-                        Vector{Vector{Float32}}}},
+                        Vector{Vector{Float32}},
+                        Vector{Float32}}},
                       b::Vector{Float32})
         @inbounds bp = view(b,CL.p)
         #@inbounds bp = b[CL.p]
@@ -56,7 +57,7 @@ function ldiv_cl!(x::Vector{Float32},
         y_temp = CL.y_temp[Threads.threadid()]
         @inbounds copy!(y_temp,view(x,CL.p))
 
-        forward_substit!(x_temp,CL.L, bp)
+        forward_substit!(x_temp,CL.L, bp, CL.invS)
         backward_substit!(y_temp,CL.U, x_temp)
         @inbounds x[CL.p] .= y_temp
         return nothing
@@ -64,7 +65,7 @@ function ldiv_cl!(x::Vector{Float32},
 end
 
 
-function forward_substit!(x, S, b)
+function forward_substit!(x, S, b, invS)
     x .= 0;
     sc1 = S.colptr[1]
     #sr = zeros(Int64,length(x))
@@ -76,15 +77,18 @@ function forward_substit!(x, S, b)
         #println(idx," ",S.rowval[idx])
         xc = x[col]
         xc = (b[col] + xc)
-        xc = xc/S.nzval[sc1]
+        #xc = xc/S.nzval[sc1]
+        xc = xc*invS[col]
         x[col] = xc
         setindex!(x,xc,col)
         sc1 = sc2
         #@inbounds sr=view(S.rowval,idx)
 
-        for v in idx
+         @turbo for i ∈ eachindex(idx)
+         #for v in idx
              #foo2!(v,S,x,xc,sr,k)
-             foo1!(v,S,x,xc)
+             v = idx[i]
+             c1 = foo1!(v,S,x,xc)
         end
     end
 end
