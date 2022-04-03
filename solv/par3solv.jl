@@ -54,49 +54,40 @@ function solv_krn!(x::Array{Float64,1},kn::Vector{Vector{Int64}},b::Array{Float6
     for j = 1:length(kn)
         list = kn[j]
         #k=0
-        @inbounds zz[1:length(list)] .= 1.0 ./ view(L.nzval,view(L.colptr,list))
         for (k,row::Int64) in enumerate(list)
-            dfg!(zz,L,U,x,b,row)
+            # list[i]
+            #ia = setdiff(L[row,:].nzind,row)
+            #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
+            #s = U.nzval[U.colptr[row]:U.colptr[row+1]-2]
+            #x[row] = (b[row]-dot(view(x,ia),s))/L[row,row]
+
+            sr1 = L.colptr[row]
+            #s+= x[U.rowval[v]]*U.nzval[v]
+            s = css(U,x,row)
+            y = b[row]
+            s = y-s
+            @inbounds s = s/L.nzval[sr1]
+            #@inbounds setindex!(x,s,row)
+            #k+=1
+            @inbounds zz[k] = s
         end
         x[list] .= view(zz,1:length(list))
     end
 end
 
-function dfg!(zz,L,U,x,b,row,k)
-
-    # list[i]
-    #ia = setdiff(L[row,:].nzind,row)
-    #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
-    #s = U.nzval[U.colptr[row]:U.colptr[row+1]-2]
-    #x[row] = (b[row]-dot(view(x,ia),s))/L[row,row]
-
-    sr1 = L.colptr[row]
-    sru = U.colptr[row]
-    sru2 = U.colptr[row+1]-2
-    rng = sru:sru2
-    s = css(rng,U,x)
-
-    y = b[row]
-    s = y-s
-    @inbounds @fastmath s = s*zz[k]
-    #@inbounds setindex!(x,s,row)
-    #k+=1
-    @inbounds zz[k] = s
-end
-
-function css(rng, U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1})
+function css(U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},row)
     s::Float64 = 0.0
-    for v in rng
-        #s+= x[U.rowval[v]]*U.nzval[v]
-        @inbounds z = getindex(U.rowval,v)
-        @inbounds s = s + x[z]*U.nzval[v]
+    sru = U.colptr[row]
+    rng = sru:U.colptr[row+1]-2
+    @inbounds for v = rng
+        z = getindex(U.rowval,v)
+        s = s + x[z]*U.nzval[v]
     end
     return s
 end
 
 
 x2 = copy(x); x2.=0
-@time forward_substit!(x2, L, b, invS)
 @btime forward_substit!($x2, $L, $b, $invS)
 
 invS = zeros(Float32,L.n)
