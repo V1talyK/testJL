@@ -49,39 +49,29 @@ x = zeros(length(b))
 sum(abs,x.-x0)
 kn1 = map(x->Int64.(x), kn)
 
+fg(y) = fgh(y,L,U,x,b)
 function solv_krn!(x::Array{Float64,1},kn::Vector{Vector{Int64}},b::Array{Float64,1},L::SparseMatrixCSC{Float64, Int64},U::SparseMatrixCSC{Float64, Int64})
-    zz = zeros(length(b))
-    for j = 1:length(kn)
-        list = kn[j]
-        #k=0
-        for (k,row::Int64) in enumerate(list)
-            # list[i]
-            #ia = setdiff(L[row,:].nzind,row)
-            #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
-            #s = U.nzval[U.colptr[row]:U.colptr[row+1]-2]
-            #x[row] = (b[row]-dot(view(x,ia),s))/L[row,row]
+    #zz = zeros(length(b))
 
-            sr1 = L.colptr[row]
-            #s+= x[U.rowval[v]]*U.nzval[v]
-            s = css(U,x,row)
-            y = b[row]
-            s = y-s
-            @inbounds s = s/L.nzval[sr1]
-            #@inbounds setindex!(x,s,row)
-            #k+=1
-            @inbounds zz[k] = s
+    for j = 1:length(kn)
+        list::Vector{Int64} = kn[j]
+        #k=0
+        #for row in list
+        #    x[row] = fgh(row,L,U,x,b)
+        #end
+        @inbounds for i in list
+            fg(i)
         end
-        x[list] .= view(zz,1:length(list))
     end
 end
 
-function css(U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},row)
+function css(U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},row::Int64)
     s::Float64 = 0.0
     sru = U.colptr[row]
     rng = sru:U.colptr[row+1]-2
-    @inbounds for v = rng
+    @inbounds for v in rng
         z = getindex(U.rowval,v)
-        s = s + x[z]*U.nzval[v]
+        s += x[z]*U.nzval[v]
     end
     return s
 end
@@ -94,3 +84,26 @@ invS = zeros(Float32,L.n)
 nme(invS,L)
 
 sum(abs,x0.-x2)
+@code_warntype solv_krn!(x,kn1,b,L,U)
+
+
+function fgh(row::Int64,L::SparseMatrixCSC{Float64, Int64},U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},b::Array{Float64,1})
+    #row = list[i]
+    #ia = setdiff(L[row,:].nzind,row)
+    #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
+    #s = U.nzval[U.colptr[row]:U.colptr[row+1]-2]
+    #x[row] = (b[row]-dot(view(x,ia),s))/L[row,row]
+
+    sr1 = L.colptr[row]
+    #s+= x[U.rowval[v]]*U.nzval[v]
+    sru = U.colptr[row]
+    rng = sru:U.colptr[row+1]-2
+    s::Float64 = css(U,x,row)
+    #s = dot(view(x,view(U.rowval,rng)),view(U.nzval,rng))
+    #s =
+    @inbounds x[row] = (b[row]-s)/L.nzval[sr1]
+    #@inbounds setindex!(x,s,row)
+    #k+=1
+    #@inbounds x[row] = s
+    return nothing
+end
