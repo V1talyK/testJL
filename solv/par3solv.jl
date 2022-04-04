@@ -45,6 +45,7 @@ x = zeros(length(b))
 @btime solv_krn!($x,$kn1,$b,$L,$U)
 @btime $x0.=$L\$b
 @profiler for i=1:500 solv_krn!(x,kn1,b,L,U); end;
+@profile solv_krn!(x,kn1,b,L,U)
 
 sum(abs,x.-x0)
 kn1 = map(x->Int64.(x), kn)
