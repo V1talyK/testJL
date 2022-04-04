@@ -1,3 +1,4 @@
+using LoopVectorization
 ACL = cholesky(mA)
 CL = make_CL_in_julia(ACL, 1)
 @time CL = make_CL_in_julia(ACL, 1)

@@ -60,7 +60,8 @@ function solv_krn!(x::Array{Float64,1},kn::Vector{Vector{Int64}},b::Array{Float6
         #for row in list
         #    x[row] = fgh(row,L,U,x,b)
         #end
-        @inbounds for i in list
+        #fg.(list)
+        for i in list
             fg(i)
         end
     end
@@ -70,7 +71,7 @@ function css(U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},row::Int64)
     s::Float64 = 0.0
     sru = U.colptr[row]
     rng = sru:U.colptr[row+1]-2
-    @inbounds for v in rng
+    for v in rng
         z = getindex(U.rowval,v)
         s += x[z]*U.nzval[v]
     end
@@ -79,6 +80,7 @@ end
 
 
 x2 = copy(x); x2.=0
+@time forward_substit!(x2, L, b, invS)
 @btime forward_substit!($x2, $L, $b, $invS)
 
 invS = zeros(Float32,L.n)
@@ -102,6 +104,7 @@ function fgh(row::Int64,L::SparseMatrixCSC{Float64, Int64},U::SparseMatrixCSC{Fl
     s::Float64 = css(U,x,row)
     #s = dot(view(x,view(U.rowval,rng)),view(U.nzval,rng))
     #s =
+    (b[row]-s)/L.nzval[sr1];
     @inbounds x[row] = (b[row]-s)/L.nzval[sr1]
     #@inbounds setindex!(x,s,row)
     #k+=1

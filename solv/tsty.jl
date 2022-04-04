@@ -84,8 +84,9 @@ function forward_substit!(x, S, b, invS)
         sc1 = sc2
         #@inbounds sr=view(S.rowval,idx)
 
-         for v in idx
-             foo1!(v,S,x,xc)
+         for i in eachindex(idx)
+             v = idx[i]
+             z = foo3!(v,S,x,xc)
          end
     end
 end
@@ -105,6 +106,22 @@ function foo2!(v::Int64,
     @fastmath z -= y
     @inbounds setindex!(x,z,i)
     return nothing
+end
+
+function foo3!(v::Int64,
+               S::SparseMatrixCSC{Float64, Int64},
+               x::Vector{Float64},
+               xc::Float64)
+        #y = S.nzval[v] * x[col];
+    @inbounds z = S.nzval[v]
+    @fastmath y = z * xc;
+    #@inbounds i = S.rowval[v]
+    po = pointer(S.rowval)
+    i = unsafe_load(po, v)
+    @inbounds z = getindex(x,i)
+    z -= y
+    @inbounds setindex!(x,z,i)
+    return z
 end
 
 function foo1!(v::Int64,
