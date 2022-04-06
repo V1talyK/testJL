@@ -15,54 +15,27 @@ ACL = cholesky(mA)
 L = sparse(ACL.L)
 b = rand(100)
 x0 = L\b
-
-flag = true
-k = 1
-rn = []
-kn = []
-while flag
-    rn = []
-    for i=1:L.n
-        if length(L[i,:].nzind)==1
-        #if count(i.==L.rowval)==1
-            push!(rn,i)
-        end
-    end
-    push!(kn,[])
-    for i in rn
-        push!(kn[k],i)
-        L[:,i].=0
-    end
-    dropzeros!(L)
-    k+=1
-    flag = length(L.nzval)>0 & k<L.n
-    println(k)
-end
-
 U = copy(L')
+kn = make_order(U)
+
 x = zeros(length(b))
-@time solv_krn!(x,kn1,b,L,U)
-@btime solv_krn!($x,$kn1,$b,$L,$U)
+@time solv_krn!(x,kn,b,L,U,zz)
+@btime solv_krn!($x,$kn,$b,$L,$U)
 @btime $x0.=$L\$b
-@profiler for i=1:500 solv_krn!(x,kn1,b,L,U); end;
+@profiler for i=1:500 solv_krn!(x,kn,b,L,U,zz); end;
 @profile solv_krn!(x,kn1,b,L,U)
 
 sum(abs,x.-x0)
-kn1 = map(x->Int64.(x), kn)
+zz = zeros(maximum(length.(kn)))
 
 fg(y) = fgh(y,L,U,x,b)
-function solv_krn!(x::Array{Float64,1},kn::Vector{Vector{Int64}},b::Array{Float64,1},L::SparseMatrixCSC{Float64, Int64},U::SparseMatrixCSC{Float64, Int64})
-    #zz = zeros(length(b))
+function solv_krn!(x::Array{Float64,1},kn::Vector{Vector{Int64}},b::Array{Float64,1},L::SparseMatrixCSC{Float64, Int64},U::SparseMatrixCSC{Float64, Int64},zz::Array{Float64,1})
 
     for j = 1:length(kn)
         list::Vector{Int64} = kn[j]
-        #k=0
-        #for row in list
-        #    x[row] = fgh(row,L,U,x,b)
-        #end
-        #fg.(list)
-        for i in list
-            fg(i)
+        for (k,v) in enumerate(list)
+            s = fg(v)
+            zz[k] = s
         end
     end
 end
@@ -73,7 +46,7 @@ function css(U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},row::Int64)
     rng = sru:U.colptr[row+1]-2
     for v in rng
         z = getindex(U.rowval,v)
-        s += x[z]*U.nzval[v]
+        @inbounds s += x[z]*U.nzval[v]
     end
     return s
 end
@@ -90,7 +63,7 @@ sum(abs,x0.-x2)
 @code_warntype solv_krn!(x,kn1,b,L,U)
 
 
-function fgh(row::Int64,L::SparseMatrixCSC{Float64, Int64},U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},b::Array{Float64,1})
+function fgh(row,L::SparseMatrixCSC{Float64, Int64},U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},b::Array{Float64,1})
     #row = list[i]
     #ia = setdiff(L[row,:].nzind,row)
     #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
@@ -104,10 +77,35 @@ function fgh(row::Int64,L::SparseMatrixCSC{Float64, Int64},U::SparseMatrixCSC{Fl
     s::Float64 = css(U,x,row)
     #s = dot(view(x,view(U.rowval,rng)),view(U.nzval,rng))
     #s =
-    (b[row]-s)/L.nzval[sr1];
-    @inbounds x[row] = (b[row]-s)/L.nzval[sr1]
-    #@inbounds setindex!(x,s,row)
-    #k+=1
+    @inbounds s = (b[row]-s)/L.nzval[sr1];
     #@inbounds x[row] = s
-    return nothing
+    return s
+end
+
+function make_order(U0)
+    flag = true
+    k = 1
+    rn = []
+    kn = []
+    U = copy(U0)
+    while flag
+        rn = []
+        for i=1:U.n
+            if U.colptr[i]==U.colptr[i+1]-1
+            #if length(L[i,:].nzind)==1
+            #if count(i.==L.rowval)==1
+                push!(rn,i)
+            end
+        end
+        push!(kn,[])
+        for i in rn
+            push!(kn[k],i)
+            U[i,:].=0
+        end
+        dropzeros!(U)
+        k+=1
+        flag = length(U.nzval)>0 & k<L.n
+        println(k)
+    end
+    return map(x->Int64.(x), kn)
 end

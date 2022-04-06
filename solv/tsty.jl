@@ -176,11 +176,11 @@ function bar(v,UU,x,xc)
 end
 
 
-y = zeros(Float32,CL.L.n)
 function nme(y,S)
     @inbounds @fastmath @simd for col = 1:S.n
         y[col] = one(Float32)/S.nzval[S.colptr[col]]
     end
 end
 
+y = zeros(Float32,CL.L.n)
 @btime nme($y,$CL32.L)
