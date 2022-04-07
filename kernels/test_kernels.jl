@@ -1,4 +1,4 @@
-using KernelAbstractions, Test, CUDA, LinearAlgebra
+using KernelAbstractions, Test, CUDA, LinearAlgebra, BenchmarkTools
 
 if has_cuda_gpu()
     CUDA.allowscalar(false)
@@ -32,17 +32,16 @@ function matmul!(a, b, c)
     return nothing
 end
 
-n = 400
+n = 100
 a = rand(n,n)
 b = rand(n, n)
 c = zeros(n, n)
 
 @time for i=1:10 matmul!(a, b, c) end;
-@time matmul!(a, b, c)
+@time matmul!(a,b, c)
 # beginning CPU tests, returns event
-@time for i=1:10
-    LinearAlgebra.mul!(c,a,b);
-end;
+@btime LinearAlgebra.mul!($c,$a,$b);
+
 
 
 @kernel function copy_kernel!(A, @Const(B))
@@ -71,4 +70,43 @@ end
 @time @inbounds a[i,k]
 
 i=1
-j=1 
+j=1
+
+
+@kernel function dot_kernel!(A, B, C)
+    IG = @index(Group)
+    IL = @index(Local)
+    I = @index(Global)
+    IGl = @index(Group, Linear)
+    #@inbounds A[I]*B[I]
+    #@print " G" IG
+    #@print " L" IL
+    #@print " I" I
+    C[IL] = C[IL] + A[I]*B[I]
+end
+
+function mydot!(A::Array, B::Array, C::Array)
+    @assert size(A) == size(B)
+    kernel = dot_kernel!(CPU(), 4)
+    event = kernel(A, B, C, ndrange=length(A))
+    wait(event)
+    return sum(C)
+end
+
+a = collect(0.5:0.5:8)
+b = collect(1:16)
+c = zeros(4)
+
+
+a = rand(100)
+b = rand(100)
+c = zeros(4)
+
+a = rand(10_000)
+b = rand(10_000)
+c = zeros(4)
+
+@time mydot!(a,b,c)
+
+dot(a,b)
+sum(c)
