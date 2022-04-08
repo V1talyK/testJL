@@ -182,5 +182,104 @@ function nme(y,S)
     end
 end
 
-y = zeros(Float32,CL.L.n)
-@btime nme($y,$CL32.L)
+
+function solv_krn!(x::Array{Float64,1},
+                   kn::Vector{Vector{Int64}},
+                   b::Array{Float64,1},
+                   L::SparseMatrixCSC{Float64, Int64},
+                   U::SparseMatrixCSC{Float64, Int64},
+                   zz::Array{Float64,1},
+                   fg::Function)
+
+    for j = 1:length(kn)
+        list::Vector{Int64,1} = kn[j]
+        bbr(zz,fg,list)
+        for (k,v) in enumerate(list)
+            zz[k] = fg(v)
+        end
+        cp2!(x,zz,list)
+        #x[list] .= zz[1:length(list)]
+    end
+end
+
+function css(U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},row::Int64)
+    s::Float64 = 0.0
+    sru = U.colptr[row]
+    rng = sru:U.colptr[row+1]-2
+    for v in rng
+        z = getindex(U.rowval,v)
+        @inbounds s += x[z]*U.nzval[v]
+    end
+    #s = sdot1(x, U.nzval, U.rowval, rng)
+    return s
+end
+
+function css1(cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1},
+              x::Array{Float64,1},row::Int64)
+    s::Float64 = 0.0
+    sru = cl[row]
+    rng = sru:cl[row+1]-2
+    for v in rng
+        z = getindex(rw,v)
+        @inbounds s += x[z]*nz[v]
+    end
+    #s = sdot1(x, nz, rw, rng)
+    return s
+end
+
+function fgh(row,L::SparseMatrixCSC{Float64, Int64},
+                 U::SparseMatrixCSC{Float64, Int64},
+                 x::Array{Float64,1},
+                 b::Array{Float64,1},
+                 cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
+    #row = list[i]
+    #ia = setdiff(L[row,:].nzind,row)
+    #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
+    #s = U.nzval[U.colptr[row]:U.colptr[row+1]-2]
+    #x[row] = (b[row]-dot(view(x,ia),s))/L[row,row]
+
+    sr1 = L.colptr[row]
+    #s+= x[U.rowval[v]]*U.nzval[v]
+    sru = U.colptr[row]
+    rng = sru:U.colptr[row+1]-2
+    s = css1(cl,rw,nz,x,row)
+    #s= css(U,x,row)
+    #s = dot(view(x,view(U.rowval,rng)),view(U.nzval,rng))
+    #s =
+    @inbounds s = (b[row]-s)/L.nzval[sr1];
+    #@inbounds x[row] = s
+    return s
+end
+
+function make_order(U0)
+    flag = true
+    k = 1
+    rn = []
+    kn = []
+    U = copy(U0)
+    while flag
+        rn = []
+        for i=1:U.n
+            if U.colptr[i]==U.colptr[i+1]-1
+            #if length(L[i,:].nzind)==1
+            #if count(i.==L.rowval)==1
+                push!(rn,i)
+            end
+        end
+        push!(kn,[])
+        for i in rn
+            push!(kn[k],i)
+            U[i,:].=0
+        end
+        dropzeros!(U)
+        k+=1
+        flag = length(U.nzval)>0 & k<L.n
+        println(k)
+    end
+    return map(x->Int64.(x), kn)
+end
+function cp2!(a,b,ind)
+    for (k,v) in enumerate(ind)
+        a[v] = b[k]
+    end
+end
