@@ -25,10 +25,10 @@ kn = make_order(U)
 zz = zeros(maximum(length.(kn)))
 
 x = zeros(length(b))
-@time solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz)
-@btime solv_krn!($x,$kn,$b,$L,$U,$zz,$fg,$cl,$rw,$nz)
+@time solv_krn!(x,kn,b,zz, cl,rw,nz)
+@btime solv_krn!($x,$kn,$b,$zz,$cl,$rw,$nz)
 @btime $x0.=$L\$b
-@profiler for i=1:500 solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz,nni,rni); end;
+@profiler for i=1:500 solv_krn!(x,kn,b,zz,cl,rw,nz); end;
 @profile solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz)
 
 sum(abs,x.-x0)
@@ -43,13 +43,13 @@ list = kn[1]
 
 function bbr(zz::Array{Float64,1},list::Array{Int64,1},
                    b::Array{Float64,1},
-                   L::SparseMatrixCSC{Float64, Int64},
-                   U::SparseMatrixCSC{Float64, Int64},
                    cl::Array{Int64, 1},
                    rw::Array{Int64, 1},
                    nz::Array{Float64, 1})
-    for (k,v) in enumerate(list)
-        zz[k] = fgh(v,L,U,x,b,cl,rw,nz)
+    #for (k,v) in enumerate(list)
+    n = length(list)
+    @sync for k = 1:n
+        Threads.@spawn fgh(zz,k,list,x,b,cl,rw,nz)
     end
 end
 
@@ -82,3 +82,9 @@ for list in kn
     push!(nni,nn)
     push!(rni,rn)
 end
+
+row = kn[2]
+
+L.nzval[L.colptr[row]]
+
+all(U.nzval[U.colptr[row.+1].-1].==L.nzval[L.colptr[row]])

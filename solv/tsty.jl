@@ -186,25 +186,20 @@ end
 function solv_krn!(x::Array{Float64,1},
                    kn::Vector{Vector{Int64}},
                    b::Array{Float64,1},
-                   L::SparseMatrixCSC{Float64, Int64},
-                   U::SparseMatrixCSC{Float64, Int64},
                    zz::Array{Float64,1},
-                   fg::Function,
                    cl,rw,nz)
 
     list = kn[1]
     for (k,row) in enumerate(list)
-        sr1 = L.colptr[row]
-        @inbounds zz[k] = b[row]/L.nzval[sr1];
+        sr1 = cl[row+1]-1
+        @inbounds zz[k] = b[row]/nz[sr1];
     end
     cp2!(x,zz,list)
 
     for i = 2:length(kn)
         list = kn[i]
-        bbr(zz,list,b,L,U,cl,rw,nz)
-        #@timeit to "2"
+        bbr(zz,kn[i],b,cl,rw,nz)
         cp2!(x,zz,list)
-        #x[list] .= zz[1:length(list)]
     end
 end
 
@@ -225,33 +220,23 @@ function css1(cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1},
     s::Float64 = 0.0
     sru = cl[row]
     rng = sru:cl[row+1]-2
-    for v in rng
+    @inbounds @fastmath for v in rng
         z = getindex(rw,v)
-        @inbounds @fastmath s += x[z]*nz[v]
+        s += x[z]*nz[v]
     end
     #s = sdot1(x, nz, rw, rng)
     return s
 end
 
-function fgh(row,L::SparseMatrixCSC{Float64, Int64},
-                 U::SparseMatrixCSC{Float64, Int64},
-                 x::Array{Float64,1},
-                 b::Array{Float64,1},
-                 cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
-    #row = list[i]
-    #ia = setdiff(L[row,:].nzind,row)
-    #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
-    #s = U.nzval[U.colptr[row]:U.colptr[row+1]-2]
-    #x[row] = (b[row]-dot(view(x,ia),s))/L[row,row]
-
-    sr1 = L.colptr[row]
-    #s+= x[U.rowval[v]]*U.nzval[v]
-    sru = U.colptr[row]
-    rng = sru:U.colptr[row+1]-2
+function fgh(zz::Array{Int64,1},k::Int64,list::Array{Int64,1},
+             x::Array{Float64,1},
+             b::Array{Float64,1},
+             cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
+    row = list[k]
+    sr1 = cl[row+1]-1
     s = css1(cl,rw,nz,x,row)
-    @inbounds s = (b[row]-s)/L.nzval[sr1];
-    #@inbounds x[row] = s
-    return s
+    @inbounds zz[k] = (b[row]-s)/nz[sr1];
+    return nothing
 end
 
 function make_order(U0)
