@@ -25,8 +25,8 @@ kn = make_order(U)
 zz = zeros(maximum(length.(kn)))
 
 x = zeros(length(b))
-@time solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz,nni,rni)
-@btime solv_krn!($x,$kn,$b,$L,$U,$zz,$fg,$cl,$rw,$nz,$nni,$rni)
+@time solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz)
+@btime solv_krn!($x,$kn,$b,$L,$U,$zz,$fg,$cl,$rw,$nz)
 @btime $x0.=$L\$b
 @profiler for i=1:500 solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz,nni,rni); end;
 @profile solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz)
@@ -47,11 +47,9 @@ function bbr(zz::Array{Float64,1},list::Array{Int64,1},
                    U::SparseMatrixCSC{Float64, Int64},
                    cl::Array{Int64, 1},
                    rw::Array{Int64, 1},
-                   nz::Array{Float64, 1},
-                   nn::Vector{Array},
-                   rn::Vector{Array})
+                   nz::Array{Float64, 1})
     for (k,v) in enumerate(list)
-        zz[k] = fgh(v,L,U,x,b,cl,rw,nz,nn[k],rn[k])
+        zz[k] = fgh(v,L,U,x,b,cl,rw,nz)
     end
 end
 

@@ -190,7 +190,7 @@ function solv_krn!(x::Array{Float64,1},
                    U::SparseMatrixCSC{Float64, Int64},
                    zz::Array{Float64,1},
                    fg::Function,
-                   cl,rw,nz,nni,rni)
+                   cl,rw,nz)
 
     list = kn[1]
     for (k,row) in enumerate(list)
@@ -201,15 +201,7 @@ function solv_krn!(x::Array{Float64,1},
 
     for i = 2:length(kn)
         list = kn[i]
-        nn = nni[i]
-        rn = rni[i]
-        # @timeit to "2" for (k,v) in enumerate(list)
-        #     #@timeit to "2.1"
-        #     #zz[k] = fg(v)
-        #     zz[k] = fgh(v,L,U,x,b,cl,rw,nz)
-        # end
-        #@timeit to "1"
-        bbr(zz,list,b,L,U,cl,rw,nz,nn,rn)
+        bbr(zz,list,b,L,U,cl,rw,nz)
         #@timeit to "2"
         cp2!(x,zz,list)
         #x[list] .= zz[1:length(list)]
@@ -245,8 +237,7 @@ function fgh(row,L::SparseMatrixCSC{Float64, Int64},
                  U::SparseMatrixCSC{Float64, Int64},
                  x::Array{Float64,1},
                  b::Array{Float64,1},
-                 cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1},
-                 nnk::Array{Float64,1},rnk::Array{Int64,1})
+                 cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
     #row = list[i]
     #ia = setdiff(L[row,:].nzind,row)
     #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
@@ -257,17 +248,7 @@ function fgh(row,L::SparseMatrixCSC{Float64, Int64},
     #s+= x[U.rowval[v]]*U.nzval[v]
     sru = U.colptr[row]
     rng = sru:U.colptr[row+1]-2
-    #s = css1(cl,rw,nz,x,row)
-
-    s::Float64 = 0.0
-    for i in eachindex(nnk)
-        z = getindex(rnk,i)
-        @inbounds @fastmath s += x[z]*nnk[i]
-    end
-    s = dot(nnk,nnk)
-    #s= css(U,x,row)
-    #s = dot(view(x,view(U.rowval,rng)),view(U.nzval,rng))
-    #s =
+    s = css1(cl,rw,nz,x,row)
     @inbounds s = (b[row]-s)/L.nzval[sr1];
     #@inbounds x[row] = s
     return s
