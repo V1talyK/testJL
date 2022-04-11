@@ -88,9 +88,8 @@ end
 function mydot!(A::Array, B::Array, C::Array)
     @assert size(A) == size(B)
     kernel = dot_kernel!(CPU(), 4)
-    event = kernel(A, B, C, ndrange=length(A))
-    wait(event)
-    return sum(C)
+    kernel(A, B, C, ndrange=length(A))
+    return nothing
 end
 
 a = collect(0.5:0.5:8)
@@ -102,11 +101,31 @@ a = rand(100)
 b = rand(100)
 c = zeros(4)
 
-a = rand(10_000)
-b = rand(10_000)
+a = rand(100_000)
+b = rand(100_000)
 c = zeros(4)
 
 @time mydot!(a,b,c)
 
-dot(a,b)
+@time dot(a,b)
 sum(c)
+
+
+@kernel function dot_by_i_kernel!(A, B, C)
+    IG = @index(Group)
+    IL = @index(Local)
+    I = @index(Global)
+    IGl = @index(Group, Linear)
+    #@inbounds A[I]*B[I]
+    #@print " G" IG
+    #@print " L" IL
+    #@print " I" I
+    C[IL] = C[IL] + A[I]*B[I]
+end
+
+function mydot!(A::Array, B::Array, C::Array)
+    @assert size(A) == size(B)
+    kernel = dot_kernel!(CPU(), 4)
+    kernel(A, B, C, ndrange=length(A))
+    return nothing
+end

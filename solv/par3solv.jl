@@ -27,6 +27,7 @@ x = zeros(length(b))
 @profile solv_krn!(x,kn,b,L,U, zz, fg)
 
 sum(abs,x.-x0)
+reset_timer!(to1::TimerOutput)
 
 cl = copy(U.colptr)
 rw = copy(U.rowval)
@@ -36,9 +37,9 @@ fg(y::Int64) = fgh(y::Int64,L,U,x,b,cl,rw,nz)
 list = kn[1]
 @profiler bbr(zz,fg,list)
 
-function bbr(zz::Array{Float64,1},fg::Function,list::Array{Int64,1})
-    for (k,v) in enumerate(list)
-        zz[k] = fg(v)
+@inline function bbr(zz::Array{Float64,1},fg::Function,list::Array{Int64,1})
+    @timeit to1 "1.1" for (k,v) in enumerate(list)
+        @timeit to1 "1.1.1" zz[k] = fg(v)
     end
 end
 

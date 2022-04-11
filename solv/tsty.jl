@@ -191,13 +191,12 @@ function solv_krn!(x::Array{Float64,1},
                    zz::Array{Float64,1},
                    fg::Function)
 
-    for j = 1:length(kn)
-        list::Vector{Int64,1} = kn[j]
-        bbr(zz,fg,list)
-        for (k,v) in enumerate(list)
-            zz[k] = fg(v)
-        end
-        cp2!(x,zz,list)
+    @timeit to1 "0" for j = 1:length(kn)
+        @timeit to1 "1" bbr(zz,fg,kn[j])
+        # @timeit to1 "2" for (k,v) in enumerate(kn[j])
+        #     @timeit to1 "2.1" zz[k] = fg(v)
+        # end
+        @timeit to1 "2" cp2!(x,zz,kn[j])
         #x[list] .= zz[1:length(list)]
     end
 end
