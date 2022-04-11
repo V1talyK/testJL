@@ -189,14 +189,28 @@ function solv_krn!(x::Array{Float64,1},
                    L::SparseMatrixCSC{Float64, Int64},
                    U::SparseMatrixCSC{Float64, Int64},
                    zz::Array{Float64,1},
-                   fg::Function)
+                   fg::Function,
+                   cl,rw,nz,nni,rni)
 
-    for j = 1:length(kn)
-        list::Vector{Int64,1} = kn[j]
-        bbr(zz,fg,list)
-        for (k,v) in enumerate(list)
-            zz[k] = fg(v)
-        end
+    list = kn[1]
+    for (k,row) in enumerate(list)
+        sr1 = L.colptr[row]
+        @inbounds zz[k] = b[row]/L.nzval[sr1];
+    end
+    cp2!(x,zz,list)
+
+    for i = 2:length(kn)
+        list = kn[i]
+        nn = nni[i]
+        rn = rni[i]
+        # @timeit to "2" for (k,v) in enumerate(list)
+        #     #@timeit to "2.1"
+        #     #zz[k] = fg(v)
+        #     zz[k] = fgh(v,L,U,x,b,cl,rw,nz)
+        # end
+        #@timeit to "1"
+        bbr(zz,list,b,L,U,cl,rw,nz,nn,rn)
+        #@timeit to "2"
         cp2!(x,zz,list)
         #x[list] .= zz[1:length(list)]
     end
@@ -221,7 +235,7 @@ function css1(cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1},
     rng = sru:cl[row+1]-2
     for v in rng
         z = getindex(rw,v)
-        @inbounds s += x[z]*nz[v]
+        @inbounds @fastmath s += x[z]*nz[v]
     end
     #s = sdot1(x, nz, rw, rng)
     return s
@@ -231,7 +245,8 @@ function fgh(row,L::SparseMatrixCSC{Float64, Int64},
                  U::SparseMatrixCSC{Float64, Int64},
                  x::Array{Float64,1},
                  b::Array{Float64,1},
-                 cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
+                 cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1},
+                 nnk::Array{Float64,1},rnk::Array{Int64,1})
     #row = list[i]
     #ia = setdiff(L[row,:].nzind,row)
     #ia = U.rowval[U.colptr[row]:U.colptr[row+1]-2]
@@ -242,7 +257,14 @@ function fgh(row,L::SparseMatrixCSC{Float64, Int64},
     #s+= x[U.rowval[v]]*U.nzval[v]
     sru = U.colptr[row]
     rng = sru:U.colptr[row+1]-2
-    s = css1(cl,rw,nz,x,row)
+    #s = css1(cl,rw,nz,x,row)
+
+    s::Float64 = 0.0
+    for i in eachindex(nnk)
+        z = getindex(rnk,i)
+        @inbounds @fastmath s += x[z]*nnk[i]
+    end
+    s = dot(nnk,nnk)
     #s= css(U,x,row)
     #s = dot(view(x,view(U.rowval,rng)),view(U.nzval,rng))
     #s =
