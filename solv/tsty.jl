@@ -203,6 +203,34 @@ function solv_krn!(x::Array{Float64,1},
     end
 end
 
+
+function bbr(zz::Array{Float64,1},list::Array{Int64,1},
+                   b::Array{Float64,1},
+                   cl::Array{Int64, 1},
+                   rw::Array{Int64, 1},
+                   nz::Array{Float64, 1})
+    #for (k,v) in enumerate(list)
+    n = length(list)
+    for pk = Iterators.partition(1:n,8)
+        Threads.@threads for k in pk
+            1+1
+            #fgh(zz,k,list,x,b,cl,rw,nz)
+        end
+    end
+end
+
+function fgh(zz::Array{Float64,1},k::Int64,list::Array{Int64,1},
+             x::Array{Float64,1},
+             b::Array{Float64,1},
+             cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
+    row = list[k]
+    sr1 = cl[row+1]-1
+    s = css1(cl,rw,nz,x,row)
+    #@inbounds zz[k] = (b[row]-s)/nz[sr1];
+    return nothing
+end
+
+
 function css(U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},row::Int64)
     s::Float64 = 0.0
     sru = U.colptr[row]
@@ -226,17 +254,6 @@ function css1(cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1},
     end
     #s = sdot1(x, nz, rw, rng)
     return s
-end
-
-function fgh(zz::Array{Int64,1},k::Int64,list::Array{Int64,1},
-             x::Array{Float64,1},
-             b::Array{Float64,1},
-             cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
-    row = list[k]
-    sr1 = cl[row+1]-1
-    s = css1(cl,rw,nz,x,row)
-    @inbounds zz[k] = (b[row]-s)/nz[sr1];
-    return nothing
 end
 
 function make_order(U0)

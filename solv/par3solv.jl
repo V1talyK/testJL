@@ -28,7 +28,7 @@ x = zeros(length(b))
 @time solv_krn!(x,kn,b,zz, cl,rw,nz)
 @btime solv_krn!($x,$kn,$b,$zz,$cl,$rw,$nz)
 @btime $x0.=$L\$b
-@profiler for i=1:500 solv_krn!(x,kn,b,zz,cl,rw,nz); end;
+@profiler for i=1:10 solv_krn!(x,kn,b,zz,cl,rw,nz); end;
 @profile solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz)
 
 sum(abs,x.-x0)
@@ -42,17 +42,6 @@ fg(y::Int64) = fgh(y::Int64,L,U,x,b,cl,rw,nz)
 list = kn[1]
 @profiler bbr(zz,fg,list)
 
-function bbr(zz::Array{Float64,1},list::Array{Int64,1},
-                   b::Array{Float64,1},
-                   cl::Array{Int64, 1},
-                   rw::Array{Int64, 1},
-                   nz::Array{Float64, 1})
-    #for (k,v) in enumerate(list)
-    n = length(list)
-    @sync for k = 1:n
-        Threads.@spawn fgh(zz,k,list,x,b,cl,rw,nz)
-    end
-end
 
 x2 = copy(x); x2.=0
 @time forward_substit!(x2, L, b, invS)
@@ -89,3 +78,40 @@ row = kn[2]
 L.nzval[L.colptr[row]]
 
 all(U.nzval[U.colptr[row.+1].-1].==L.nzval[L.colptr[row]])
+
+x = zeros(8)
+ch = Channel{Any}(4)
+
+ts = Threads.@spawn begin
+    thr_id = Threads.threadid()
+    for item in ch
+        x[item] = thr_id
+    end
+end
+
+
+put!(ch,b)
+for i=1:100
+    put!(ch,rand(length(b)))
+end
+
+x = zeros(length(b),8)
+CL8=[cholesky(mA) for i=1:8];
+CL=cholesky(mA)
+
+function wc1(z,i)
+    z[i] = Threads.threadid()
+end
+function mwc(z)
+    tsp = Vector(undef,8)
+    for i=1:8
+        tsp[i] = Threads.@spawn wc1(z,i)
+    end
+    return tsp
+end
+
+z = zeros(10)
+wc = mwc(z)
+for i=1:10
+    wc(i)
+end
