@@ -144,15 +144,29 @@ end
 
 function cssk(X::Array, NZ::Array, RW::Array, S::Array)
     kernel = cssk_kernel!(CPU(), 4)
-    kernel(X, NZ, S, ndrange=length(X))
+    kernel(X, NZ, RW, S, ndrange=length(X))
     return nothing
 end
 
-X = zeros(100)
+X = 1 .+ zeros(100)
 NZ = rand(1000)
 RW = rand(1:100,1000)
 S = zeros(4)
 
 cssk(X, NZ, RW, S)
+    sum(S)
+rng = collect(1:50)
+S1 = css2(rng,RW,NZ,X)
 
-S
+
+
+
+function css2(rng,rw::Array{Int64,1},nz::Array{Float64,1},
+              x::Array{Float64,1})
+    s = zero(Float64)
+    @inbounds @fastmath for v in rng
+        z = getindex(rw,v)
+        s += x[z]*nz[v]
+    end
+    return s
+end
