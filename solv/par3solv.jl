@@ -24,6 +24,10 @@ U = copy(L')
 kn = make_order(U)
 zz = zeros(maximum(length.(kn)))
 
+cl = copy(U.colptr)
+rw = copy(U.rowval)
+nz = copy(U.nzval)
+
 x = zeros(length(b))
 @time solv_krn!(x,kn,b,zz, cl,rw,nz)
 @btime solv_krn!($x,$kn,$b,$zz,$cl,$rw,$nz)
@@ -34,10 +38,8 @@ x = zeros(length(b))
 sum(abs,x.-x0)
 reset_timer!(to1::TimerOutput)
 
-cl = copy(U.colptr)
-rw = copy(U.rowval)
-nz = copy(U.nzval)
-fg(y::Int64) = fgh(y::Int64,L,U,x,b,cl,rw,nz)
+
+fg(y,y1,y2,y3) = fgh!(zz,y,y1,y2,y3,x,b,cl,rw,nz)
 
 list = kn[1]
 @profiler bbr(zz,fg,list)

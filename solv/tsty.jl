@@ -211,23 +211,26 @@ function bbr(zz::Array{Float64,1},list::Array{Int64,1},
                    nz::Array{Float64, 1})
     #for (k,v) in enumerate(list)
     n = length(list)
-    for pk = Iterators.partition(1:n,8)
-        Threads.@threads for k in pk
-            1+1
-            #fgh(zz,k,list,x,b,cl,rw,nz)
-        end
+    sr1 = cl[list.+1].-1
+    sr = cl[list]
+    sru1 = cl[list.+1].-2
+    rng = [sr[k]:sru1[k] for k = 1:n]
+    @tturbo for k = 1:n
+        #zz[k] = fgh!(zz,list[k],x,b,cl,rw,nz)
+        zz[k] = fg(list[k],sr1[k], sr[k], rng[k])
     end
+
 end
 
-function fgh(zz::Array{Float64,1},k::Int64,list::Array{Int64,1},
-             x::Array{Float64,1},
+function fgh!(zz::Array{Float64,1},row,sr1,sr,sru1,
+                 x::Array{Float64,1},
              b::Array{Float64,1},
              cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
-    row = list[k]
-    sr1 = cl[row+1]-1
-    s = css1(cl,rw,nz,x,row)
-    #@inbounds zz[k] = (b[row]-s)/nz[sr1];
-    return nothing
+    #row = list[k]
+
+    s = css1(cl,rw,nz,x,row,sr,sru1)
+    @inbounds s = (b[row]-s)/nz[sr1];
+    return s
 end
 
 
@@ -244,11 +247,11 @@ function css(U::SparseMatrixCSC{Float64, Int64},x::Array{Float64,1},row::Int64)
 end
 
 function css1(cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1},
-              x::Array{Float64,1},row::Int64)
-    s::Float64 = 0.0
-    sru = cl[row]
-    rng = sru:cl[row+1]-2
-    @inbounds @fastmath for v in rng
+              x::Array{Float64,1},row,sru,rng)
+    s = zero(Float64)
+    #sru = cl[row]
+
+    for v in rng
         z = getindex(rw,v)
         s += x[z]*nz[v]
     end
