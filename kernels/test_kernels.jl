@@ -129,3 +129,30 @@ function mydot!(A::Array, B::Array, C::Array)
     kernel(A, B, C, ndrange=length(A))
     return nothing
 end
+
+
+
+
+@kernel function cssk_kernel!(X, NZ, RW, S)
+    IG = @index(Group)
+    IL = @index(Local)
+    I = @index(Global)
+    IGl = @index(Group, Linear)
+    z = RW[I]
+    S[IL] = S[IL] + X[z]*NZ[I]
+end
+
+function cssk(X::Array, NZ::Array, RW::Array, S::Array)
+    kernel = cssk_kernel!(CPU(), 4)
+    kernel(X, NZ, S, ndrange=length(X))
+    return nothing
+end
+
+X = zeros(100)
+NZ = rand(1000)
+RW = rand(1:100,1000)
+S = zeros(4)
+
+cssk(X, NZ, RW, S)
+
+S

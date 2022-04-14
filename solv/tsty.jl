@@ -198,8 +198,8 @@ function solv_krn!(x::Array{Float64,1},
 
     for i = 2:length(kn)
         list = kn[i]
-        #calc_zz!(zz,kn[i],x,b,cl,rw,nz)
-        calc_zzt!(zz,kn[i],x,b,cl,rw,nz)
+        calc_zz!(zz,kn[i],x,b,cl,rw,nz)
+        #calc_zzt!(zz,kn[i],x,b,cl,rw,nz)
         cp2!(x,zz,list)
     end
 end
