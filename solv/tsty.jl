@@ -198,29 +198,47 @@ function solv_krn!(x::Array{Float64,1},
 
     for i = 2:length(kn)
         list = kn[i]
-        bbr(zz,kn[i],x,b,cl,rw,nz)
+        #calc_zz!(zz,kn[i],x,b,cl,rw,nz)
+        calc_zzt!(zz,kn[i],x,b,cl,rw,nz)
         cp2!(x,zz,list)
     end
 end
 
 
-function bbr(zz::Array{Float64,1},
-             list::Array{Int64,1},
-             x::Array{Float64,1},
-             b::Array{Float64,1},
-             cl::Array{Int64, 1},
-             rw::Array{Int64, 1},
-             nz::Array{Float64, 1})
+function calc_zz!(zz::Array{Float64,1},
+                 list::Array{Int64,1},
+                 x::Array{Float64,1},
+                 b::Array{Float64,1},
+                 cl::Array{Int64, 1},
+                 rw::Array{Int64, 1},
+                 nz::Array{Float64, 1})
 
     for (k,v) in enumerate(list)
-        zz[k] = fgh!(v,x,b,cl,rw,nz)
+        zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
     end
 end
 
-function fgh!(row::Int64,
+function calc_zzt!(zz::Array{Float64,1},
+                 list::Array{Int64,1},
+                 x::Array{Float64,1},
+                 b::Array{Float64,1},
+                 cl::Array{Int64, 1},
+                 rw::Array{Int64, 1},
+                 nz::Array{Float64, 1})
+    gh = collect(Iterators.partition(list,40))
+    Threads.@threads for plist in gh
+        for (k,v) in enumerate(plist)
+            zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
+        end
+    end
+end
+
+function calc_zz_k(row::Int64,
              x::Array{Float64,1},
              b::Array{Float64,1},
-             cl::Array{Int64,1},rw::Array{Int64,1},nz::Array{Float64,1})
+             cl::Array{Int64,1},
+             rw::Array{Int64,1},
+             nz::Array{Float64,1})
 
     sr1 = cl[row+1]-1
 
