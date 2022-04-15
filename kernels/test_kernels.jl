@@ -79,9 +79,9 @@ j=1
     I = @index(Global)
     IGl = @index(Group, Linear)
     #@inbounds A[I]*B[I]
-    #@print " G" IG
-    #@print " L" IL
-    #@print " I" I
+    @print " G" IG " L" IL " I" I " |"
+    # @print " L" IL
+    # @print " I" I
     C[IL] = C[IL] + A[I]*B[I]
 end
 
@@ -92,8 +92,8 @@ function mydot!(A::Array, B::Array, C::Array)
     return nothing
 end
 
-a = collect(0.5:0.5:8)
-b = collect(1:16)
+a = collect(0.5:0.5:10)
+b = collect(1:20)
 c = zeros(4)
 
 
@@ -117,9 +117,9 @@ sum(c)
     I = @index(Global)
     IGl = @index(Group, Linear)
     #@inbounds A[I]*B[I]
-    #@print " G" IG
-    #@print " L" IL
-    #@print " I" I
+    @print " G" IG
+    @print " L" IL
+    @print " I" I
     C[IL] = C[IL] + A[I]*B[I]
 end
 
@@ -133,30 +133,49 @@ end
 
 
 
-@kernel function cssk_kernel!(X, NZ, RW, S)
+@kernel function cssk_kernel!(X, NZ, RW, S,rng)
     IG = @index(Group)
     IL = @index(Local)
     I = @index(Global)
     IGl = @index(Group, Linear)
-    z = RW[I]
-    S[IL] = S[IL] + X[z]*NZ[I]
+    v = rng[I]
+    z = RW[v]
+    #@print v
+    S[IL] = S[IL] + X[z]*NZ[v]
+    @synchronize
 end
 
-function cssk(X::Array, NZ::Array, RW::Array, S::Array)
+function cssk(cl::Array, rw::Array, nz::Array, x::Array, row::Int64)
+    S = zeros(Float64,4)
+    sru = cl[row]
+    rng = collect(sru:cl[row+1]-2)
     kernel = cssk_kernel!(CPU(), 4)
-    kernel(X, NZ, RW, S, ndrange=length(X))
-    return nothing
+    ev = kernel(x, nz, rw, S, rng, ndrange=length(rng))
+    wait(ev)
+    return sum(S)
 end
 
-X = 1 .+ zeros(100)
-NZ = rand(1000)
-RW = rand(1:100,1000)
+nn = 10000
+mm = 1000
+X = 1 .+ zeros(mm)
+NZ = rand(nn)
+RW = rand(1:mm,nn)
 S = zeros(4)
+rng = collect(1:mm)
 
-cssk(X, NZ, RW, S)
-    sum(S)
-rng = collect(1:50)
-S1 = css2(rng,RW,NZ,X)
+@time for i=1:10000
+    cssk(X, NZ, RW, S, rng)
+    #S.=0
+end
+
+cssk(X, NZ, RW, S, rng)
+sum(S)
+
+@time for i=1:10000
+    css2(rng,RW,NZ,X)
+end
+
+@btime css2($rng,$RW,$NZ,$X);
 
 
 
@@ -170,3 +189,15 @@ function css2(rng,rw::Array{Int64,1},nz::Array{Float64,1},
     end
     return s
 end
+
+for list in kn
+    for (k,v) in enumerate(list)
+        zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
+    end
+end
+
+for (k,v) in enumerate(kn[11])
+    zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
+end
+imax = argmax(zz[1:length(kn[10])])
+zz[imax]

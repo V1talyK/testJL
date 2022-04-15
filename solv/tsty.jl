@@ -243,8 +243,10 @@ function calc_zz_k(row::Int64,
     sr1 = cl[row+1]-1
 
     s = css1(cl,rw,nz,x,row)
-    @inbounds s = (b[row]-s)/nz[sr1];
-    return s
+    s1 = cssk(cl,rw,nz,x,row)
+    println(s-s1)
+    #@inbounds s = (b[row]-s)/nz[sr1];
+    return s-s1
 end
 
 
