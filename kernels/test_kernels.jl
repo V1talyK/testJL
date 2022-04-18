@@ -75,14 +75,22 @@ j=1
 
 @kernel function dot_kernel!(A, B, C)
     IG = @index(Group)
-    IL = @index(Local)
+    local_i = @index(Local)
     I = @index(Global)
     IGl = @index(Group, Linear)
-    #@inbounds A[I]*B[I]
-    @print " G" IG " L" IL " I" I " |"
+
+    tb_sum = @localmem T TBSize
+    #while i <= length(A)
+    @inbounds tb_sum[local_i] += A[I] * B[I]
+      #i += TBSize * DotBlocks
+    #end
+
+    M = @uniform @groupsize()
+
+    @print " G" IG " L" local_i " I" I " |$M"
     # @print " L" IL
     # @print " I" I
-    C[IL] = C[IL] + A[I]*B[I]
+    C[local_i] = C[local_i] + A[I]*B[I]
 end
 
 function mydot!(A::Array, B::Array, C::Array)
@@ -133,16 +141,21 @@ end
 
 
 
-@kernel function cssk_kernel!(X, NZ, RW, S,rng)
+@kernel function cssk_kernel!(@Const(X), @Const(NZ), @Const(RW), S, @Const(rng))
     IG = @index(Group)
-    IL = @index(Local)
+    local_i = @index(Local)
     I = @index(Global)
     IGl = @index(Group, Linear)
+
+    tb_sum = @localmem Float64 4
+    @inbounds tb_sum[local_i] = 0.0
+
     v = rng[I]
     z = RW[v]
     #@print v
-    S[IL] = S[IL] + X[z]*NZ[v]
+    tb_sum[local_i] += X[z]*NZ[v]
     @synchronize
+    S[local_i] = tb_sum[local_i]
 end
 
 function cssk(cl::Array, rw::Array, nz::Array, x::Array, row::Int64)
