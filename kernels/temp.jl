@@ -76,10 +76,11 @@ mydot!(a::Array, b::Array, sz, partial)
     group_i = @index(Group)
     global_i = @index(Global)
 
-    x = (group_i - 1) * blocks + local_i
+    x = (group_i - 1) * tpb + local_i
 
     @print " Grp:" group_i ", L:" local_i ", Glb:" global_i " |$x"
 
+    c[x] = a[x] + b[x]
 
   end
 
