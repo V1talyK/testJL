@@ -29,7 +29,10 @@ rw = copy(U.rowval)
 nz = copy(U.nzval)
 
 x = zeros(length(b))
-@time solv_krn!(x,kn,b,zz, cl,rw,nz)
+
+@time for i=1:100 solv_krn!(x,kn,b,zz, cl,rw,nz) end;
+@time for i=1:1000 solv_krn1!(x,kn,b,zz, cl,rw,nz) end;
+
 @btime solv_krn!($x,$kn,$b,$zz,$cl,$rw,$nz)
 @btime $x0.=$L\$b
 @profiler for i=1:10 solv_krn!(x,kn,b,zz,cl,rw,nz); end;

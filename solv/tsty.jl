@@ -183,6 +183,28 @@ function nme(y,S)
 end
 
 
+function solv_krn1!(x::Array{Float64,1},
+                   kn::Vector{Vector{Int64}},
+                   b::Array{Float64,1},
+                   zz::Array{Float64,1},
+                   cl,rw,nz)
+
+    list = kn[1]
+    for (k,row) in enumerate(list)
+        sr1 = cl[row+1]-1
+        @inbounds zz[k] = b[row]/nz[sr1];
+    end
+    cp2!(x,zz,list)
+
+    for i = 2:length(kn)
+        list = kn[i]
+        #calc_zz!(zz,kn[i],x,b,cl,rw,nz)
+        #calc_zzt!(zz,kn[i],x,b,cl,rw,nz)
+        calc_zz_kern(kernel,kn[i],zz,x,b,cl,rw,nz)
+        cp2!(x,zz,list)
+    end
+end
+
 function solv_krn!(x::Array{Float64,1},
                    kn::Vector{Vector{Int64}},
                    b::Array{Float64,1},
@@ -200,10 +222,10 @@ function solv_krn!(x::Array{Float64,1},
         list = kn[i]
         calc_zz!(zz,kn[i],x,b,cl,rw,nz)
         #calc_zzt!(zz,kn[i],x,b,cl,rw,nz)
+        #calc_zz_kern(kn[i],zz,x,b,cl,rw,nz)
         cp2!(x,zz,list)
     end
 end
-
 
 function calc_zz!(zz::Array{Float64,1},
                  list::Array{Int64,1},
@@ -243,10 +265,10 @@ function calc_zz_k(row::Int64,
     sr1 = cl[row+1]-1
 
     s = css1(cl,rw,nz,x,row)
-    s1 = cssk(cl,rw,nz,x,row)
+    #s1 = cssk(cl,rw,nz,x,row)
     #println(s-s1)
-    #@inbounds s = (b[row]-s)/nz[sr1];
-    return s-s1
+    @inbounds s = (b[row]-s)/nz[sr1];
+    return s
 end
 
 

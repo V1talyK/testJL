@@ -209,8 +209,34 @@ for list in kn
     end
 end
 
-for (k,v) in enumerate(kn[11])
+for (k,v) in enumerate(kn[2])
     zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
 end
-imax = argmax(zz[1:length(kn[10])])
+imax = argmax(zz[1:length(kn[2])])
 zz[imax]
+
+@time calc_zz_kern(kernel,kn[2],zz,x,b,cl,rw,nz)
+
+@kernel function calc_zz_kernel!(list::Array, zz::Array, x::Array, b::Array, cl::Array, rw::Array, nz::Array)
+    grp_i = @index(Group)
+    lcl_i = @index(Local)
+    glb_i = @index(Global)
+
+    s = zero(eltype(zz))
+    row = Int64(list[glb_i])
+    s = css1(cl,rw,nz,x,row)
+
+    sr1 = cl[row+1]-1
+    s = (b[row]-s)/nz[sr1];
+    zz[glb_i] = s
+    @synchronize
+
+end
+
+kernel = calc_zz_kernel!(CPU(), 4)
+
+function calc_zz_kern(kernel,list::Array, zz::Array, x::Array, b::Array, cl::Array, rw::Array, nz::Array)
+    ev = kernel(list,zz,x,b,cl,rw,nz, ndrange=length(list))
+    wait(ev)
+    return nothing
+end
