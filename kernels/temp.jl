@@ -4,7 +4,7 @@ for list in kn
     end
 end
 
-for (k,v) in enumerate(kn[2])
+for (k,v) in enumerate(kn[12])
     zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
 end
 imax = argmax(zz[1:length(kn[10])])
