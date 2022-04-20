@@ -4,7 +4,7 @@ for list in kn
     end
 end
 
-for (k,v) in enumerate(kn[12])
+for (k,v) in enumerate(kn[2])
     zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
 end
 imax = argmax(zz[1:length(kn[10])])
@@ -76,11 +76,10 @@ mydot!(a::Array, b::Array, sz, partial)
     group_i = @index(Group)
     global_i = @index(Global)
 
-    x = (group_i - 1) * tpb + local_i
+    x = (group_i - 1) * blocks + local_i
 
     @print " Grp:" group_i ", L:" local_i ", Glb:" global_i " |$x"
 
-    c[x] = a[x] + b[x]
 
   end
 

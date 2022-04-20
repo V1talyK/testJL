@@ -216,6 +216,7 @@ imax = argmax(zz[1:length(kn[2])])
 zz[imax]
 
 @time calc_zz_kern(kernel,kn[2],zz,x,b,cl,rw,nz)
+getrange(length(kn[2]),2)
 
 @kernel function calc_zz_kernel!(list::Array, zz::Array, x::Array, b::Array, cl::Array, rw::Array, nz::Array)
     grp_i = @index(Group)
@@ -239,4 +240,13 @@ function calc_zz_kern(kernel,list::Array, zz::Array, x::Array, b::Array, cl::Arr
     ev = kernel(list,zz,x,b,cl,rw,nz, ndrange=length(list))
     wait(ev)
     return nothing
+end
+
+function getrange(n::Int64, tid::Int64 = Threads.threadid())
+    # tid = Threads.threadid()
+    nt = Threads.nthreads()
+    d , r = divrem(n, nt)
+    from = (tid - 1) * d + min(r, tid - 1) + 1
+    to = from + d - 1 + (tid ≤ r ? 1 : 0)
+    return from:to
 end

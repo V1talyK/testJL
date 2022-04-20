@@ -187,11 +187,11 @@ function solv_krn1!(x::Array{Float64,1},
                    kn::Vector{Vector{Int64}},
                    b::Array{Float64,1},
                    zz::Array{Float64,1},
-                   cl,rw,nz)
+                   cl::Vector{Int64},rw::Vector{Int64},nz::Vector{Float64})
 
     list = kn[1]
     for (k,row) in enumerate(list)
-        sr1 = cl[row+1]-1
+        sr1 = cl[row+one(Int64)]-one(Int64)
         @inbounds zz[k] = b[row]/nz[sr1];
     end
     cp2!(x,zz,list)
@@ -200,7 +200,11 @@ function solv_krn1!(x::Array{Float64,1},
         list = kn[i]
         #calc_zz!(zz,kn[i],x,b,cl,rw,nz)
         #calc_zzt!(zz,kn[i],x,b,cl,rw,nz)
-        calc_zz_kern(kernel,kn[i],zz,x,b,cl,rw,nz)
+        #calc_zz_kern(kernel,kn[i],zz,x,b,cl,rw,nz)
+        Threads.@threads for j=1:Threads.nthreads()
+            trng = getrange(length(list))
+            @inbounds calc_zz!(view(zz,trng),view(kn[i],trng),x,b,cl,rw,nz)
+        end
         cp2!(x,zz,list)
     end
 end
@@ -227,8 +231,8 @@ function solv_krn!(x::Array{Float64,1},
     end
 end
 
-function calc_zz!(zz::Array{Float64,1},
-                 list::Array{Int64,1},
+function calc_zz!(zz,
+                 list,
                  x::Array{Float64,1},
                  b::Array{Float64,1},
                  cl::Array{Int64, 1},

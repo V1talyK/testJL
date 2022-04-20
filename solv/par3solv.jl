@@ -31,11 +31,12 @@ nz = copy(U.nzval)
 x = zeros(length(b))
 
 @time for i=1:100 solv_krn!(x,kn,b,zz, cl,rw,nz) end;
-@time for i=1:1000 solv_krn1!(x,kn,b,zz, cl,rw,nz) end;
+@time for i=1:100 solv_krn1!(x,kn,b,zz, cl,rw,nz) end;
 
 @btime solv_krn!($x,$kn,$b,$zz,$cl,$rw,$nz)
+@btime solv_krn1!($x,$kn,$b,$zz,$cl,$rw,$nz)
 @btime $x0.=$L\$b
-@profiler for i=1:10 solv_krn!(x,kn,b,zz,cl,rw,nz); end;
+@profiler for i=1:10 solv_krn1!(x,kn,b,zz,cl,rw,nz); end;
 @profile solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz)
 
 sum(abs,x.-x0)
@@ -72,3 +73,16 @@ ts = Threads.@spawn begin
         x[item] = thr_id
     end
 end
+
+
+
+function gt1()
+    fv = Vector(undef,4)
+    @sync for i = 1:Threads.nthreads()
+        Threads.@spawn fv[i] = x->x*Threads.threadid()
+    end
+    return fv
+end
+
+fv = gt1()
+fv[4](1)
