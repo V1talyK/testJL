@@ -30,14 +30,15 @@ nz = copy(U.nzval)
 
 x = zeros(length(b))
 
+@time solv_krn!(x,kn,b,zz, cl,rw,nz,mcnl3)
 @time for i=1:100 solv_krn!(x,kn,b,zz, cl,rw,nz) end;
 @time for i=1:100 solv_krn1!(x,kn,b,zz, cl,rw,nz) end;
 
 @btime solv_krn!($x,$kn,$b,$zz,$cl,$rw,$nz)
 @btime solv_krn1!($x,$kn,$b,$zz,$cl,$rw,$nz)
 @btime $x0.=$L\$b
-@profiler for i=1:10 solv_krn1!(x,kn,b,zz,cl,rw,nz); end;
-@profile solv_krn!(x,kn,b,L,U,zz, fg,cl,rw,nz)
+@profiler for i=1:10 solv_krn!(x,kn,b,zz,cl,rw,nz,mcnl3); end;
+@profile solv_krn!(x,kn,b,zz, cl,rw,nz)
 
 sum(abs,x.-x0)
 reset_timer!(to1::TimerOutput)

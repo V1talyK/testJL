@@ -213,7 +213,7 @@ function solv_krn!(x::Array{Float64,1},
                    kn::Vector{Vector{Int64}},
                    b::Array{Float64,1},
                    zz::Array{Float64,1},
-                   cl,rw,nz)
+                   cl,rw,nz,mcnl3)
 
     list = kn[1]
     for (k,row) in enumerate(list)
@@ -224,7 +224,7 @@ function solv_krn!(x::Array{Float64,1},
 
     for i = 2:length(kn)
         list = kn[i]
-        calc_zz!(zz,kn[i],x,b,cl,rw,nz)
+        calc_zz!(zz,kn[i],x,b,cl,rw,nz,mcnl3)
         #calc_zzt!(zz,kn[i],x,b,cl,rw,nz)
         #calc_zz_kern(kn[i],zz,x,b,cl,rw,nz)
         cp2!(x,zz,list)
@@ -237,10 +237,11 @@ function calc_zz!(zz,
                  b::Array{Float64,1},
                  cl::Array{Int64, 1},
                  rw::Array{Int64, 1},
-                 nz::Array{Float64, 1})
+                 nz::Array{Float64, 1},mcnl3)
 
     for (k,v) in enumerate(list)
-        zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
+        #zz[k] = calc_zz_k(v,x,b,cl,rw,nz)
+        put!(mcnl3,(v,k))
     end
 end
 
