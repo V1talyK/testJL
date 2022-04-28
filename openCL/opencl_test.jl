@@ -10,8 +10,8 @@ const sum_kernel = "
       c[gid] = a[gid] + b[gid];
     }
  "
-a = rand(Float32, 50_000)
-b = rand(Float32, 50_000)
+a = rand(Float32, 50_0000)
+b = rand(Float32, 50_0000)
 
 device, ctx, queue = cl.create_compute_context()
 
@@ -22,8 +22,8 @@ c_buff = cl.Buffer(Float32, ctx, :w, length(a))
 p = cl.Program(ctx, source=sum_kernel) |> cl.build!
 k = cl.Kernel(p, "sum")
 
-queue(k, size(a), nothing, a_buff, b_buff, c_buff)
-
+@time queue(k, size(a), nothing, a_buff, b_buff, c_buff)
+@time c .= a.+b
 r = cl.read(queue, c_buff)
 
 if isapprox(norm(r - (a+b)), zero(Float32))
