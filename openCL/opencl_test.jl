@@ -23,7 +23,7 @@ p = cl.Program(ctx, source=sum_kernel) |> cl.build!
 k = cl.Kernel(p, "sum")
 
 @time queue(k, size(a), nothing, a_buff, b_buff, c_buff)
-@time c .= a.+b
+@time c = a.+b
 r = cl.read(queue, c_buff)
 
 if isapprox(norm(r - (a+b)), zero(Float32))

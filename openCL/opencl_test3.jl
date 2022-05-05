@@ -24,54 +24,58 @@ naive_transpose = "
    a_t[write_idx] = a[read_idx];
    }";
 
-dot_kernel = "
-   #define BLOCK_SIZE $(BLOCK_SIZE)
-    __kernel
-    __attribute__((reqd_work_group_size(BLOCK_SIZE, 1, 1)))
-     void tdot(__global const float *a,
-                __global const float *b,
-                __global int *gi0,
-                __global int *li0,
-                __local float *a_local)
-{
-    size_t gl_id = get_global_id(0);              // Global id, used as the row index
-    size_t lc_id = get_local_id(0);
-    size_t gr_id = get_group_id();
+dot_kernel = "__kernel void tdot (__global const float *a,
+                                  __global const float *b,
+                         __global float *partialSums,
+                         __local float *localSums)
+ {
+  uint local_id = get_local_id(0);
+  uint group_size = get_local_size(0);
 
-    gi0[gl_id] = gl_id;
-    li0[gl_id] = lc_id;
+  // Copy from global to local memory
+  localSums[local_id] = a[get_global_id(0)]*b[get_global_id(0)];
 
-    int base_idx_a   = get_group_id(0) * BLOCK_SIZE + get_group_id(1) * (BLOCK_SIZE * 1);
+  // Loop for computing localSums : divide WorkGroup into 2 parts
+  for (uint stride = group_size/2; stride>0; stride /=2)
+     {
+      // Waiting for each 2x2 addition into given workgroup
+      barrier(CLK_LOCAL_MEM_FENCE);
 
-    int glob_idx_a   = base_idx_a + get_local_id(0) + 1 * get_local_id(1);
+      // Add elements 2 by 2 between local_id and local_id + stride
+      if (local_id < stride)
+        localSums[local_id] += localSums[local_id + stride];
+     }
 
-    a_local[lc_id] += a[gl_id]+b[gl_id];
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    gi0[0] = a_local[lc_id];
- }
- "
+  // Write result into partialSums[nWorkGroups]
+  if (local_id == 0)
+    partialSums[get_group_id(0)] = localSums[0];
+ }"
 
 
-a = rand(Float32, 32)
-b = rand(Float32, 32)
+n = 2^10
+a = rand(Float32, n)
+b = rand(Float32, n)
+c = rand(Float32, n)*0
 
 device, ctx, queue = cl.create_compute_context()
 
 a_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=a)
-b_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=b)
+b_buff = cl.Buffer(Float32, ctx, (:w, :copy), hostbuf=b)
+c_buff = cl.Buffer(Float32, ctx, (:w, :copy), hostbuf=c)
+
 gi0_buff = cl.Buffer(Int32, ctx, :w, length(a))
 gi1_buff = cl.Buffer(Int32, ctx, :w, length(a))
 li0_buff = cl.Buffer(Int32, ctx, :w, length(a))
 li1_buff = cl.Buffer(Int32, ctx, :w, length(a))
 
+BLOCK_SIZE = 512
+
 p = cl.Program(ctx, source=dot_kernel) |> cl.build!
 k = cl.Kernel(p, "tdot")
 lmem = cl.LocalMem(Float32, UInt32(BLOCK_SIZE + 1));
 
-@time queue(k, size(a), (UInt32(16),), a_buff, b_buff, gi0_buff, li0_buff, lmem)
-gi0 = cl.read(queue, gi0_buff)
-li0 = cl.read(queue, li0_buff)
+@time queue(k, size(a), (UInt32(512),), a_buff, b_buff, c_buff, lmem)
+cc = cl.read(queue, c_buff)
+#li0 = cl.read(queue, li0_buff)
 
 println.(collect(zip(gi0, li0)))

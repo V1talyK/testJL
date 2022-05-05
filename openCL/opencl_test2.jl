@@ -19,7 +19,7 @@ mul_kernel = "
  }
  "
 
-BLOCK_SIZE = 16;
+BLOCK_SIZE = 32;
 
 a = rand(Float32, 100,20)
 b = rand(Float32, 20)
