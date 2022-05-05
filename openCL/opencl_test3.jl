@@ -52,7 +52,7 @@ dot_kernel = "__kernel void tdot (__global const float *a,
  }"
 
 
-n = 2^10
+n = 2^16
 a = rand(Float32, n)
 b = rand(Float32, n)
 c = rand(Float32, n)*0
@@ -60,7 +60,7 @@ c = rand(Float32, n)*0
 device, ctx, queue = cl.create_compute_context()
 
 a_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=a)
-b_buff = cl.Buffer(Float32, ctx, (:w, :copy), hostbuf=b)
+b_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=b)
 c_buff = cl.Buffer(Float32, ctx, (:w, :copy), hostbuf=c)
 
 gi0_buff = cl.Buffer(Int32, ctx, :w, length(a))
@@ -72,10 +72,25 @@ BLOCK_SIZE = 512
 
 p = cl.Program(ctx, source=dot_kernel) |> cl.build!
 k = cl.Kernel(p, "tdot")
-lmem = cl.LocalMem(Float32, UInt32(BLOCK_SIZE + 1));
+
 
 @time queue(k, size(a), (UInt32(512),), a_buff, b_buff, c_buff, lmem)
 cc = cl.read(queue, c_buff)
 #li0 = cl.read(queue, li0_buff)
 
 println.(collect(zip(gi0, li0)))
+@time dot(a,b)
+
+method = function enqueue_dot_kernel(queue::cl.CmdQueue,
+                               k::cl.Kernel,
+                               a::cl.Buffer{Float32},
+                               b::cl.Buffer{Float32},
+                               c::cl.Buffer{Float32},
+                               dims)
+    lmem = cl.LocalMem(Float32, UInt32(BLOCK_SIZE + 1));
+    cl.set_args!(k, a, b, c, lmem)
+    cl.enqueue_kernel(queue, k, (dims,), (UInt32(512),))
+end
+
+queue = cl.CmdQueue(ctx, :profile)
+method(queue, k, a_buff, b_buff, c_buff, length(a))
