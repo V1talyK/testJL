@@ -15,27 +15,29 @@ A = sprand(100,100,0.1)
 A = A+A';
 A[CartesianIndex.(1:100,1:100)].=-sum(A,dims=1)[:].-1
 A = -A
+b = rand(100)
+
 ACL = cholesky(mA)
 L = sparse(ACL.L)
 dropzeros!(L)
-b = rand(100)
+
 x0 = L\b
 U = copy(L')
 kn = make_order(U)
 zz = zeros(maximum(length.(kn)))
 
-cl = copy(U.colptr)
+cl1 = copy(U.colptr)
 rw = copy(U.rowval)
 nz = copy(U.nzval)
 
 x = zeros(length(b))
 
-@time solv_krn!(x,kn,b,zz, cl,rw,nz,mcnl3)
-@time for i=1:100 solv_krn!(x,kn,b,zz, cl,rw,nz) end;
+@time solv_krn!(x,kn,b,zz, cl1,rw,nz,mcnl3)
+@time for i=1:100 solv_krn!(x,kn,b,zz, cl1,rw,nz) end;
 @time for i=1:100 solv_krn1!(x,kn,b,zz, cl,rw,nz) end;
 
-@btime solv_krn!($x,$kn,$b,$zz,$cl,$rw,$nz)
-@btime solv_krn1!($x,$kn,$b,$zz,$cl,$rw,$nz)
+@btime solv_krn!($x,$kn,$b,$zz,$cl1,$rw,$nz)
+@btime solv_krn1!($x,$kn,$b,$zz,$cl1,$rw,$nz)
 @btime $x0.=$L\$b
 @profiler for i=1:10 solv_krn!(x,kn,b,zz,cl,rw,nz,mcnl3); end;
 @profile solv_krn!(x,kn,b,zz, cl,rw,nz)

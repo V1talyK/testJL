@@ -93,4 +93,5 @@ method = function enqueue_dot_kernel(queue::cl.CmdQueue,
 end
 
 queue = cl.CmdQueue(ctx, :profile)
-method(queue, k, a_buff, b_buff, c_buff, length(a))
+@time method(queue, k, a_buff, b_buff, c_buff, length(a))
+cc = cl.read(queue, c_buff)
