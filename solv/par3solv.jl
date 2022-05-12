@@ -1,4 +1,6 @@
 using SparseArrays, BenchmarkTools, LinearAlgebra, LoopVectorization, TimerOutputs
+rsrc=dirname(Base.source_path());
+include(joinpath(rsrc,"tsty.jl"))
 
 const to = TimerOutput()
 reset_timer!(to)

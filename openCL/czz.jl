@@ -1,6 +1,9 @@
 slv_kernel = "__kernel void slvk ( __global float *zz,
                                   __global const uint *kn,
-                                  __global const float *x,
+                                  __global const uint *kn1,
+                                  __global const uint *ikn1,
+                                  __global const uint *ikn2,
+                                  __global float *x,
                                   __global const float *b,
                                   __global const uint *cl1,
                                   __global const uint *rw,
@@ -11,18 +14,21 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
   uint local_id = get_local_id(0);
   uint group_size = get_local_size(0);
   uint gl_id = get_global_id(0);
-  for (uint j = 1; j<sizeof(kn); j++)
+  for (uint j = 0; j<sizeof(ikn1); j++)
       {
-        uint row = kn[j];
-        float s = 0.f;
-        for (uint i = cl1[row[gl_id]-1]-1; i<cl1[row[gl_id]+1-1]-2; i++)
+      if (gl_id <= ikn2[j]-ikn1[j])
          {
-            uint zi = rw[i];
-            s+=x[zi]*nz[i];
+         uint trow = kn1[ikn1[j]-1+gl_id]-1;
+         float s = 0.f;
+            for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
+                {
+                uint zi = rw[i]-1;
+                s+=x[zi]*nz[i];
+                }
+         x[trow] = (b[trow]-s)/nz[cl1[trow+1]-1-1];
          }
-           x[row[gl_id]-1] = (b[row[gl_id]-1]-s)/nz[cl1[row[gl_id]+1-1]-1-1];
+       barrier(CLK_GLOBAL_MEM_FENCE);
        }
-
 
  }"
 
