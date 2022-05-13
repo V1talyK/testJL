@@ -1,4 +1,4 @@
-zz_buff = cl.Buffer(Float32, ctx, :w, hostbuf=Float32.(zz))
+zz_buff = cl.Buffer(Float32, ctx, (:w,:copy), hostbuf=Float32.(zz))
 row_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(list))
 x_buff = cl.Buffer(Float32, ctx, (:rw, :copy), hostbuf=Float32.(x))
 b_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=Float32.(b))
@@ -10,6 +10,7 @@ kn1 = Int32.(vcat(kn...))
 ikn1 = Int32.(vcat(1,cumsum(length.(kn)).+1)[1:end-1])
 ikn2 = Int32.(cumsum(length.(kn)))
 
+kn32 = map(x->Int32.(x),kn)
 kn_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=kn32[1])
 kn1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=kn1)
 ikn1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=ikn1)
