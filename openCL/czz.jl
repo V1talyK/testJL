@@ -53,7 +53,7 @@ czz_kernel = "__kernel void czz ( __global float *zz,
 #//(b[row[gl_id]]-s)/nz[cl1[row[gl_id]+1]-1];
 device, ctx, queue = cl.create_compute_context()
 
-zz_buff = cl.Buffer(Float32, ctx, :w, hostbuf=Float32.(zz))
+zz_buff = cl.Buffer(Float32, ctx, (:w, :copy), hostbuf=Float32.(zz))
 row_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(list))
 x_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=Float32.(x))
 b_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=Float32.(b))
