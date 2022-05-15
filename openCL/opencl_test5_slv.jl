@@ -1,6 +1,6 @@
 zz_buff = cl.Buffer(Float32, ctx, (:w,:copy), hostbuf=Float32.(zz))
 #row_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(list))
-x_buff = cl.Buffer(Float32, ctx, (:rw), hostbuf=Float32.(x))
+x_buff = cl.Buffer(Float32, ctx, (:rw, :copy), hostbuf=Float32.(x))
 b_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=Float32.(b))
 cl1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(cl1))
 rw_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(rw))
@@ -28,6 +28,7 @@ queue = cl.CmdQueue(ctx, :profile)
 @time queue(k, size(kn[1]), (nothing), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
                             x_buff, b_buff, cl1_buff, rw_buff, nz_buff, lmem)
 @time xxx = cl.read(queue, x_buff)
+    for i=1:10 println(sum(x0[kn[i]].-xxx[kn[i]])); end
 
 function slv_cl(kn)
     queue(k, size(kn[1]), (nothing), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,

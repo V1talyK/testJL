@@ -22,8 +22,8 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
          float s = 0.f;
          for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
             {
-            uint zi = rw[i]-1;
-            s+=x[zi]*nz[i];
+            //uint zi = rw[i]-1;
+            s+=x[rw[i]-1]*nz[i];
             }
          localSums[gl_id] = (b[trow]-s)/nz[cl1[trow+1]-1-1];
          //barrier(CLK_GLOBAL_MEM_FENCE);
