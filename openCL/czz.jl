@@ -30,8 +30,8 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
 
          x[trow] = localSums[gl_id];
          }
-         barrier(CLK_LOCAL_MEM_FENCE);
-         barrier(CLK_GLOBAL_MEM_FENCE);
+       barrier(CLK_LOCAL_MEM_FENCE);
+       barrier(CLK_GLOBAL_MEM_FENCE);
        }
 
  }"
