@@ -3,7 +3,7 @@ device, ctx, queue = cl.create_compute_context()
 zz_buff = cl.Buffer(Float32, ctx, (:w,:copy), hostbuf=Float32.(zz))
 #row_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(list))
 x32 = Float32.(x)
-x_buff = cl.Buffer(Float32, ctx, (:rw, :copy), hostbuf=x32)
+x_buff = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=x32)
 x0_buff= cl.Buffer(Float32, ctx, (:rw, :copy), hostbuf=zeros(Float32,length(x32)))
 b_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=Float32.(b))
 cl1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(cl1))
@@ -44,3 +44,15 @@ function slv_cl(kn)
 end
 
 @btime slv_cl($kn)
+
+function slvkjl(zz,kn,kn1,ikn1,ikn2,x,b,cl1,rw,nz)
+    for j=1:5
+        if gl_id <= ikn2[j]-ikn1[j]
+           row = kn1[ikn1[j]-1+gl_id]-1;
+           s = 0.0;
+           for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
+              s+=x[rw[i]-1]*nz[i];
+           end
+           x[trow] = cl1[trow+1]-2-(cl1[trow]-1);
+    end
+end

@@ -24,13 +24,16 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
             {
             //uint zi = rw[i]-1;
             s+=x[rw[i]-1]*nz[i];
-            }
-         localSums[gl_id] = (b[trow]-s)/nz[cl1[trow+1]-1-1];
-         //barrier(CLK_GLOBAL_MEM_FENCE);
 
+            }
+         x[trow] = cl1[trow+1]-2-(cl1[trow]-1);
+         localSums[gl_id] = (b[trow]-s)/nz[cl1[trow+1]-1-1];
+         barrier(CLK_LOCAL_MEM_FENCE);
          x[trow] = localSums[gl_id];
+         barrier(CLK_GLOBAL_MEM_FENCE);
+
          }
-       barrier(CLK_LOCAL_MEM_FENCE);
+       //barrier(CLK_LOCAL_MEM_FENCE);
        barrier(CLK_GLOBAL_MEM_FENCE);
        }
 
