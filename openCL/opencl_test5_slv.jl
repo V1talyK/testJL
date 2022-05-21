@@ -1,3 +1,17 @@
+using LinearAlgebra, OpenCL, SparseArrays, BenchmarkTools, LoopVectorization, BenchmarkTools
+rsrc=dirname(dirname(Base.source_path()));
+include(joinpath(rsrc,"openCL/get_Ab.jl"))
+include(joinpath(rsrc,"solv/tsty.jl"))
+
+kn = make_order(U)
+zz = zeros(maximum(length.(kn)))
+cl1 = copy(U.colptr)
+rw = copy(U.rowval)
+nz = copy(U.nzval)
+
+x = zeros(length(b))
+@time solv_krn!(x,kn,b,zz, cl1,rw,nz)
+
 device, ctx, queue = cl.create_compute_context()
 
 zz_buff = cl.Buffer(Float32, ctx, (:w,:copy), hostbuf=Float32.(zz))
@@ -24,10 +38,10 @@ BLOCK_SIZE = 512
 lmem = cl.LocalMem(Float32, UInt32(length(kn[1])));
 p = cl.Program(ctx, source=slv_kernel) |> cl.build!
 k = cl.Kernel(p, "slvk")
-bnr = cl.info(p, :binaries);
+#bnr = cl.info(p, :binaries);
 
-queue = cl.CmdQueue(ctx, :profile)
-@time cl.copy!(queue, zz_buff, zz_buff);
+#queue = cl.CmdQueue(ctx, :profile)
+#@time cl.copy!(queue, zz_buff, zz_buff);
 
 @time queue(k, size(kn[1]), (nothing), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
                             x_buff, b_buff, cl1_buff, rw_buff, nz_buff, lmem)
@@ -45,14 +59,22 @@ end
 
 @btime slv_cl($kn)
 
-function slvkjl(zz,kn,kn1,ikn1,ikn2,x,b,cl1,rw,nz)
-    for j=1:5
+function slvkjl(gl_id,zz,kn,kn1,ikn1,ikn2,x,b,cl1,rw,nz)
+    for j=1:1
         if gl_id <= ikn2[j]-ikn1[j]
-           row = kn1[ikn1[j]-1+gl_id]-1;
+           trow = kn1[ikn1[j]+gl_id-1];
            s = 0.0;
-           for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
-              s+=x[rw[i]-1]*nz[i];
+           for i = cl1[trow]:cl1[trow+1]-2
+              s+=x[rw[i]]*nz[i];
            end
-           x[trow] = cl1[trow+1]-2-(cl1[trow]-1);
+           x[trow] = (b[trow]-s)/nz[cl1[trow+1]-1]
+       end
     end
 end
+
+xx = similar(x)
+for gl_id = 1:length(kn[1])
+    slvkjl(gl_id,zz,kn,kn1,ikn1,ikn2,xx,b,cl1,rw,nz)
+end
+
+for i=1:1 println(sum(x0[kn[i]].-xx[kn[i]])); end
