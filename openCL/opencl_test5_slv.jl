@@ -43,7 +43,7 @@ k = cl.Kernel(p, "slvk")
 #queue = cl.CmdQueue(ctx, :profile)
 #@time cl.copy!(queue, zz_buff, zz_buff);
 
-@time queue(k, size(kn[1]), (nothing), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
+@time queue(k, (2^13,), (UInt32(1),), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
                             x_buff, b_buff, cl1_buff, rw_buff, nz_buff, lmem)
 @time xxx = cl.read(queue, x_buff)
     for i=1:10 println(sum(x0[kn[i]].-xxx[kn[i]])); end
@@ -59,15 +59,15 @@ end
 
 @btime slv_cl($kn)
 
-function slvkjl(gl_id,zz,kn,kn1,ikn1,ikn2,x,b,cl1,rw,nz)
-    for j=1:1
-        if gl_id <= ikn2[j]-ikn1[j]
+function slvkjl(gl_id,zz,kn,kn1,ikn1,ikn2,xx,b,cl1,rw,nz)
+    for j=2:2
+        if gl_id <= ikn2[j]-ikn1[j]+1
            trow = kn1[ikn1[j]+gl_id-1];
            s = 0.0;
            for i = cl1[trow]:cl1[trow+1]-2
-              s+=x[rw[i]]*nz[i];
+              s+=xx[rw[i]]*nz[i];
            end
-           x[trow] = (b[trow]-s)/nz[cl1[trow+1]-1]
+           xx[trow] = (b[trow]-s)/nz[cl1[trow+1]-1]
        end
     end
 end
@@ -77,4 +77,4 @@ for gl_id = 1:length(kn[1])
     slvkjl(gl_id,zz,kn,kn1,ikn1,ikn2,xx,b,cl1,rw,nz)
 end
 
-for i=1:1 println(sum(x0[kn[i]].-xx[kn[i]])); end
+for i=1:2 println(sum(x0[kn[i]].-xx[kn[i]])); end

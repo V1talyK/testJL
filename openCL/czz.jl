@@ -12,10 +12,20 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
  {
   uint local_id = get_local_id(0);
   uint group_size = get_local_size(0);
-  uint gl_id = get_global_id(0);
+  uint gl_id = get_local_id(0);
+
+  int thid = get_local_id(0);
+  int blid = get_group_id(0);
+  gl_id = blid;
+  // a_d[thid + blid * 16]
+
   //sizeof(ikn1)
   for (uint j = 0; j<5; j++)
       {
+      barrier(CLK_GLOBAL_MEM_FENCE);
+      barrier(CLK_LOCAL_MEM_FENCE);
+      mem_fence(CLK_LOCAL_MEM_FENCE);
+      mem_fence(CLK_GLOBAL_MEM_FENCE);
       if (gl_id <= ikn2[j]-ikn1[j])
          {
          uint trow = kn1[ikn1[j]-1+gl_id]-1;
@@ -31,13 +41,25 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
          barrier(CLK_LOCAL_MEM_FENCE);
          x[trow] = localSums[gl_id];
          barrier(CLK_GLOBAL_MEM_FENCE);
+         barrier(CLK_LOCAL_MEM_FENCE);
+         mem_fence(CLK_LOCAL_MEM_FENCE);
+         mem_fence(CLK_GLOBAL_MEM_FENCE);
 
          }
        //barrier(CLK_LOCAL_MEM_FENCE);
+       //barrier(CLK_GLOBAL_MEM_FENCE);
+    else
+       {
        barrier(CLK_GLOBAL_MEM_FENCE);
+       barrier(CLK_LOCAL_MEM_FENCE);
+       mem_fence(CLK_LOCAL_MEM_FENCE);
+       mem_fence(CLK_GLOBAL_MEM_FENCE);
        }
+    }
+
 
  }"
+
 
 czz_kernel = "__kernel void czz ( __global float *zz,
                                   __global const uint *row,
