@@ -1,5 +1,5 @@
 using JLD, SparseArrays, BenchmarkTools, LinearAlgebra
-r=dirname(Base.source_path());
+rsrc=dirname(Base.source_path());
 d = JLD.load(joinpath(r,"myfile.jld"));
 d = JLD.load(joinpath(r,"myfile200k.jld"));
 d = JLD.load(joinpath("/home/lik/Документы/proto/testJL","myfile200k.jld"));

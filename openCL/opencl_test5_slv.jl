@@ -43,12 +43,13 @@ k = cl.Kernel(p, "slvk")
 #queue = cl.CmdQueue(ctx, :profile)
 #@time cl.copy!(queue, zz_buff, zz_buff);
 
-@time queue(k, (2^13,), (UInt32(1),), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
+@time queue(k, (4368,), (16,), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
                             x_buff, b_buff, cl1_buff, rw_buff, nz_buff, lmem)
 @time xxx = cl.read(queue, x_buff)
     for i=1:10 println(sum(x0[kn[i]].-xxx[kn[i]])); end
 
 @time cl.copy!(queue, x_buff, x0_buff);
+zzz = cl.read(queue, zz_buff)
 
 function slv_cl(kn)
     queue(k, size(kn[1]), (nothing), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
@@ -78,3 +79,14 @@ for gl_id = 1:length(kn[1])
 end
 
 for i=1:2 println(sum(x0[kn[i]].-xx[kn[i]])); end
+
+
+
+sum(xxx[kn[1]].-x0[kn[1]])
+
+j = 2
+gl_id = 1
+trow = kn1[ikn1[j]+gl_id]
+ia = cl1[trow]:cl1[trow+1]-2
+(b[trow]-sum(xxx[rw[ia]].*nz[ia]))/nz[cl1[trow+1]-1]
+x0[trow]
