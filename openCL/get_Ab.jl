@@ -17,4 +17,9 @@ L = sparse(ACL.L)
 dropzeros!(L)
 
 x0 = L\b
+function foo1111(x0)
+    x0 .= L\b
+end
+@btime foo1111($x0)
+
 U = copy(L')

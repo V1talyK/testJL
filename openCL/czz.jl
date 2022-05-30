@@ -8,6 +8,7 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
                                   __global const uint *cl1,
                                   __global const uint *rw,
                                   __global const float *nz,
+                                  __global const uint *sdf,
                          __local float *localSums)
  {
   uint local_id = get_local_id(0);
@@ -16,9 +17,9 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
 
   int thid = get_local_id(0);
   // a_d[thid + blid * 16]
-
-  //sizeof(ikn1)
-  for (uint j = 0; j<sizeof(ikn1); j++)
+  //float sdf1 = sdf;
+  //uint sdf = sizeof(ikn1)/sizeof(*ikn1);
+  for (uint j = 0; j<sdf[0]; j++)
       {
       barrier(CLK_GLOBAL_MEM_FENCE);
       barrier(CLK_LOCAL_MEM_FENCE);
@@ -34,17 +35,31 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
             s+=x[rw[i]-1]*nz[i];
             }
         localSums[gl_id] = (b[trow]-s)/nz[cl1[trow+1]-1-1];
-
-         //barrier(CLK_GLOBAL_MEM_FENCE);
-         //barrier(CLK_LOCAL_MEM_FENCE);
-         //mem_fence(CLK_LOCAL_MEM_FENCE);
-         //mem_fence(CLK_GLOBAL_MEM_FENCE);
+        if (j==8)
+            {
+            if(gl_id==27)
+                {
+            //zz[0] = sdf1;
+            zz[1] = cl1[trow+1]-2;
+            zz[2] = s;
+            zz[3] = x[rw[11]-1];
+            zz[4] = x[rw[12]-1];
+            zz[5] = rw[11];
+            zz[6] = rw[12];
+            }
+            }
+         barrier(CLK_GLOBAL_MEM_FENCE);
+         barrier(CLK_LOCAL_MEM_FENCE);
+         mem_fence(CLK_LOCAL_MEM_FENCE);
+         mem_fence(CLK_GLOBAL_MEM_FENCE);
 
          x[trow] = localSums[gl_id];
          }
 
     }
  }"
+ p = cl.Program(ctx, source=slv_kernel) |> cl.build!
+ krn = cl.Kernel(p, "slvk")
 
 slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
                                   __global const uint *kn,
