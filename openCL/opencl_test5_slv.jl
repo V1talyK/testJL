@@ -1,4 +1,4 @@
-using LinearAlgebra, OpenCL, SparseArrays, BenchmarkTools, LoopVectorization, BenchmarkTools
+using LinearAlgebra, OpenCL, SparseArrays, BenchmarkTools, LoopVectorization, BenchmarkTools, UnicodePlots
 rsrc=dirname(dirname(Base.source_path()));
 include(joinpath(rsrc,"openCL/get_Ab.jl"))
 include(joinpath(rsrc,"solv/tsty.jl"))
@@ -27,8 +27,8 @@ nz_buff = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=Float32.(nz))
 kn1 = Int32.(vcat(kn...))
 ikn1 = Int32.(vcat(1,cumsum(length.(kn)).+1)[1:end-1])
 ikn2 = Int32.(cumsum(length.(kn)))
-
 kn32 = map(x->Int32.(x),kn)
+
 kn_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=kn32[1])
 kn1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=kn1)
 ikn1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=ikn1)
@@ -43,7 +43,7 @@ k = cl.Kernel(p, "slvk")
 #queue = cl.CmdQueue(ctx, :profile)
 #@time cl.copy!(queue, zz_buff, zz_buff);
 
-@time queue(k, (4368,), (16,), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
+@time queue(k, (128,), (128,), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
                             x_buff, b_buff, cl1_buff, rw_buff, nz_buff, lmem)
 @time xxx = cl.read(queue, x_buff)
     for i=1:10 println(sum(x0[kn[i]].-xxx[kn[i]])); end

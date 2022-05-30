@@ -18,7 +18,55 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
   // a_d[thid + blid * 16]
 
   //sizeof(ikn1)
-  for (uint j = 0; j<5; j++)
+  for (uint j = 0; j<sizeof(ikn1); j++)
+      {
+      barrier(CLK_GLOBAL_MEM_FENCE);
+      barrier(CLK_LOCAL_MEM_FENCE);
+      mem_fence(CLK_LOCAL_MEM_FENCE);
+      mem_fence(CLK_GLOBAL_MEM_FENCE);
+      if (gl_id <= ikn2[j]-ikn1[j])
+         {
+         uint trow = kn1[ikn1[j]-1+gl_id]-1;
+         float s = 0.f;
+         //localSums[gl_id] = 0.f;
+         for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
+            {
+            s+=x[rw[i]-1]*nz[i];
+            }
+        localSums[gl_id] = (b[trow]-s)/nz[cl1[trow+1]-1-1];
+
+         //barrier(CLK_GLOBAL_MEM_FENCE);
+         //barrier(CLK_LOCAL_MEM_FENCE);
+         //mem_fence(CLK_LOCAL_MEM_FENCE);
+         //mem_fence(CLK_GLOBAL_MEM_FENCE);
+
+         x[trow] = localSums[gl_id];
+         }
+
+    }
+ }"
+
+slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
+                                  __global const uint *kn,
+                                  __global const uint *kn1,
+                                  __global const uint *ikn1,
+                                  __global const uint *ikn2,
+                                  __global float *x,
+                                  __global const float *b,
+                                  __global const uint *cl1,
+                                  __global const uint *rw,
+                                  __global const float *nz,
+                         __local float *localSums)
+ {
+  uint local_id = get_local_id(0);
+  uint group_size = get_local_size(0);
+  uint gl_id = get_global_id(0);
+
+  int thid = get_local_id(0);
+  // a_d[thid + blid * 16]
+
+  //sizeof(ikn1)
+  for (uint j = 0; j<10; j++)
       {
       barrier(CLK_GLOBAL_MEM_FENCE);
       barrier(CLK_LOCAL_MEM_FENCE);
@@ -33,7 +81,7 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
             {
             s+=x[rw[i]-1]*nz[i];
             }
-        if (j<5)
+        if (j<10)
             {
             localSums[gl_id] = (b[trow]-s)/nz[cl1[trow+1]-1-1];
             }
