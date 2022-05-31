@@ -34,14 +34,9 @@ ikn1 = Int32.(vcat(1,cumsum(length.(kn)).+1)[1:end-1])
 ikn2 = Int32.(cumsum(length.(kn)))
 kn32 = map(x->Int32.(x),kn)
 
-kn_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=kn32[1])
-kn1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=kn1)
-ikn1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=ikn1)
-ikn2_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=ikn2)
-
 kn_new = Vector(undef,0)
 for (k,v) in enumerate(kn)
-    for (k1,v1) = enumerate(Iterators.partition(v,128))
+    for (k1,v1) = enumerate(Iterators.partition(v,BLOCK_SIZE))
         push!(kn_new,v1)
     end
 end
@@ -51,17 +46,22 @@ ikn1 = Int32.(vcat(1,cumsum(length.(kn_new)).+1)[1:end-1])
 ikn2 = Int32.(cumsum(length.(kn_new)))
 kn32 = map(x->Int32.(x),kn_new)
 
+kn_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=kn32[1])
+kn1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=kn1)
+ikn1_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=ikn1)
+ikn2_buff = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=ikn2)
 
 #queue = cl.CmdQueue(ctx, :profile)
 #@time cl.copy!(queue, zz_buff, zz_buff);
 sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=[Int32(length(ikn1))])
 cl.copy!(queue, x_buff, x0_buff);
-queue(krn, (128,), (128,), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
+bs = (BLOCK_SIZE,)
+@time queue(krn, bs, bs, zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
                             x_buff, b_buff, cl1_buff, rw_buff, nz_buff, sdf, lmem)
 xx = cl.read(queue, x_buff)
     sum(abs,xx.-x0)
-    for i=1:10 println(sum(x0[kn[i]].-xx[kn[i]])); end
-    for i=1:10 println(sum(x0[kn_new[i]].-xx[kn_new[i]])); end
+    #for i=1:10 println(sum(x0[kn[i]].-xx[kn[i]])); end
+    #for i=1:10 println(sum(x0[kn_new[i]].-xx[kn_new[i]])); end
 
 #for i=1:20 println(sum(x0[kn_new[i]].-xxx[kn_new[i]])); end
 e1r = [sum(abs,x0[kn_new[i]].-xx[kn_new[i]]) for i=1:length(kn_new)]
@@ -77,15 +77,15 @@ function slv_cl(kn)
     return xx
 end
 
-function slv_cl1()
-    queue(k, (128,), (128,), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
-                                x_buff, b_buff, cl1_buff, rw_buff, nz_buff, lmem)
-    xx = cl.read(queue, x_buff)
+function slv_cl!(xx)
+    queue(krn, (BLOCK_SIZE,), (BLOCK_SIZE,), zz_buff, kn_buff, kn1_buff, ikn1_buff, ikn2_buff,
+                                x_buff, b_buff, cl1_buff, rw_buff, nz_buff, sdf,lmem)
+    xx .= cl.read(queue, x_buff)
     return xx
 end
 
 @btime slv_cl($kn)
-@btime slv_cl1()
+@btime slv_cl!(xx)
 
 function slvkjl(gl_id,zz,kn,kn1,ikn1,ikn2,xx,b,cl1,rw,nz)
     for j=2:2
