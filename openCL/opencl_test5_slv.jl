@@ -117,3 +117,12 @@ trow = kn1[ikn1[j]+gl_id]
 ia = cl1[trow]:cl1[trow+1]-2
 (b[trow]-sum(xxx[rw[ia]].*nz[ia]))/nz[cl1[trow+1]-1]
 x0[trow]
+
+
+p0 = ACL.p
+x0 = ACL\b
+y0 = L\b[p0]
+x00 = similar(x0)
+x00[p0] .= U\y0
+
+sum(abs,x0.-x00)

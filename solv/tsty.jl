@@ -337,3 +337,32 @@ function cp2!(a,b,ind)
         a[v] = b[k]
     end
 end
+
+function make_order1(U0)
+    flag = true
+    k = 1
+    rn = []
+    kn = []
+    U = copy(U0)
+    sdf = falses(length(U.rowval))
+    while flag
+        rn = []
+        for i=U.n:-1:1
+            #if length(L[i,:].nzind)==1
+            sdf .= i.==U.rowval
+            if count(sdf)==1
+                push!(rn,i)
+            end
+        end
+        push!(kn,[])
+        for i in rn
+            push!(kn[k],i)
+            U[:,i].=0
+        end
+        dropzeros!(U)
+        k+=1
+        flag = length(U.nzval)>0 & k<U.n
+        println(k)
+    end
+    return map(x->Int64.(x), kn)
+end
