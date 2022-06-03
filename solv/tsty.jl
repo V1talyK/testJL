@@ -327,7 +327,7 @@ function make_order(U0)
         end
         dropzeros!(U)
         k+=1
-        flag = length(U.nzval)>0 & k<L.n
+        flag = length(U.nzval)>0 & k<U0.n
         println(k)
     end
     return map(x->Int64.(x), kn)
@@ -338,31 +338,37 @@ function cp2!(a,b,ind)
     end
 end
 
-function make_order1(U0)
+function make_order1(L0)
     flag = true
     k = 1
     rn = []
     kn = []
-    U = copy(U0)
-    sdf = falses(length(U.rowval))
+    #U = copy(U0)
+    L = copy(L0)
+
     while flag
         rn = []
+        #sdf = falses(length(U.rowval))
         for i=U.n:-1:1
             #if length(L[i,:].nzind)==1
-            sdf .= i.==U.rowval
-            if count(sdf)==1
+            #sdf .= i.==U.rowval
+            if L.colptr[i]==L.colptr[i+1]-1
+            #if count(sdf)==1
                 push!(rn,i)
             end
         end
         push!(kn,[])
         for i in rn
             push!(kn[k],i)
-            U[:,i].=0
+            L[i,:].=0
         end
-        dropzeros!(U)
+        dropzeros!(L)
         k+=1
-        flag = length(U.nzval)>0 & k<U.n
-        println(k)
+        flag = length(L.nzval)>0 & k<L.n
+        println(k," ",length(kn[k-1]))
+        #if k>400
+        #    flag = false
+        #end
     end
     return map(x->Int64.(x), kn)
 end
