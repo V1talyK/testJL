@@ -1,8 +1,7 @@
 slv_kernel = "__kernel void slvk ( __global float *zz,
-                                  __global const uint *kn,
                                   __global const uint *kn1,
                                   __global const uint *ikn1,
-                                  __global const uint *ikn2,
+                                  __global const uint *lvl_lng,
                                   __global float *x,
                                   __global const float *b,
                                   __global const uint *cl1,
@@ -18,7 +17,7 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
   uint trow = 0;
   for (uint j = 0; j<sdf[0]; j++)
       {
-      if (gl_id <= ikn2[j]-ikn1[j])
+      if (gl_id <= lvl_lng[j]-1)
          {
          trow = kn1[ikn1[j]-1+gl_id]-1;
          s = 0.f;
@@ -35,6 +34,58 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
  p = cl.Program(ctx, source=slv_kernel) |> cl.build!
  krn = cl.Kernel(p, "slvk")
 
+slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
+                                   __global const uint *kn1,
+                                   __global const uint *ikn1,
+                                   __global const uint *lvl_lng,
+                                   __global float *x,
+                                   __global const float *b,
+                                   __global const uint *cl1,
+                                   __global const uint *rw,
+                                   __global const float *nz,
+                                   __global const uint *sdf,
+                          __local float *localSums)
+  {
+   uint local_id = get_local_id(0);
+   uint group_size = get_local_size(0);
+   uint gl_id = get_global_id(0);
+   float s = 0.f;
+   uint trow = 0;
+   for (uint j = 0; j<sdf[0]; j++)
+       {
+       if (lvl_lng[j]>1)
+       {
+          if (gl_id <= lvl_lng[j]-1)
+            {
+               trow = kn1[ikn1[j]-1+gl_id]-1;
+               s = 0.f;
+               for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
+               {
+                  s+=x[rw[i]-1]*nz[i];
+               }
+               x[trow] = (b[trow]-s)/nz[cl1[trow+1]-2];
+            }
+         }
+     else
+         {
+        trow = kn1[ikn1[j]-1]-1;
+        s = 0.f;
+        // for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
+         //{
+        //    s+=x[rw[i]-1]*nz[i];
+         //}
+         uint i2 = cl1[trow]-1+local_id;
+         uint i1 = rw[i2]-1;
+
+         //localSums[local_id] = x[i1]*nz[i2];
+         //localSums[local_id] = a[gl_id]*b[gl_id];
+         }
+     barrier(CLK_GLOBAL_MEM_FENCE);
+     barrier(CLK_LOCAL_MEM_FENCE);
+     }
+  }"
+  p = cl.Program(ctx, source=slv_kernel1) |> cl.build!
+  krn = cl.Kernel(p, "slvk1")
 
 uslv_kernel = "__kernel void uslvk ( __global float *zz,
                                    __global const uint *kn,
