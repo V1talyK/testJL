@@ -1,9 +1,11 @@
-using LinearAlgebra, OpenCL, SparseArrays, BenchmarkTools, LoopVectorization, BenchmarkTools, UnicodePlots
+using LinearAlgebra, OpenCL, SparseArrays, BenchmarkTools,
+ LoopVectorization, BenchmarkTools, UnicodePlots
+device, ctx, queue = cl.create_compute_context()
+
 rsrc=dirname(dirname(Base.source_path()));
 include(joinpath(rsrc,"openCL/get_Ab.jl"))
 include(joinpath(rsrc,"solv/tsty.jl"))
 
-device, ctx, queue = cl.create_compute_context()
 
 knL = make_order(U)
 zz = zeros(maximum(length.(knL)))
@@ -14,7 +16,7 @@ y_bf = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=y32)
 y0 = L\b
 
 BLOCK_SIZE = 1024
-lmem = cl.LocalMem(Float32, UInt32(BLOCK_SIZE));
+lmem = cl.LocalMem(Float32, UInt32(BLOCK_SIZE+1));
 zz_bf = cl.Buffer(Float32, ctx, (:rw,:use), hostbuf=Float32.(zz*0))
 
 #p = cl.Program(ctx, source=slv_kernel) |> cl.build!
@@ -60,7 +62,7 @@ e1r = [sum(abs,x0[kn_new[i]].-xx[kn_new[i]]) for i=1:length(kn_new)]
     println(lineplot(e1r))
 
 @time cl.copy!(queue, x_buff, x0_buff);
-zzz = cl.read(queue, zz_buff)
+zzz = cl.read(queue, zz_bf)
 
 
 function slv_cl!(yy)

@@ -76,8 +76,10 @@ slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
          //}
          uint i2 = cl1[trow]-1+local_id;
          uint i1 = rw[i2]-1;
-
-         //localSums[local_id] = x[i1]*nz[i2];
+         if (gl_id<4000)
+          {
+          zz[gl_id] = localSums[local_id]; //x[i1]*nz[i2];
+          }
          //localSums[local_id] = a[gl_id]*b[gl_id];
          }
      barrier(CLK_GLOBAL_MEM_FENCE);
