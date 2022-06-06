@@ -16,7 +16,7 @@ y_bf = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=y32)
 y0 = L\b
 
 BLOCK_SIZE = 1024
-lmem = cl.LocalMem(Float32, UInt32(BLOCK_SIZE+1));
+lmem = cl.LocalMem(Float32, Int32(BLOCK_SIZE+1));
 zz_bf = cl.Buffer(Float32, ctx, (:rw,:use), hostbuf=Float32.(zz*0))
 
 #p = cl.Program(ctx, source=slv_kernel) |> cl.build!
@@ -36,7 +36,7 @@ for (k,v) in enumerate(knL)
     end
 end
 
-knLl = Int32.(vcat(knL...))
+knLl = Int32.(vcat(knLn...))
 lvl_lng = Int32.(length.(knLn))
 iknL1 = Int32.(vcat(1,cumsum(length.(knLn)).+1)[1:end-1])
 iknL2 = Int32.(cumsum(length.(knLn)))
@@ -66,13 +66,13 @@ zzz = cl.read(queue, zz_bf)
 
 
 function slv_cl!(yy)
-    queue(krn, bs, bs, zz_bf, knL1_bf, iknL1_bf, iknL2_bf,
+    queue(krn, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
                                 y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem)
     yy = cl.read(queue, y_bf)
     return yy
 end
 
-@btime slv_cl!(yy)
+@btime slv_cl!($yy)
 
 
 sd = Vector(undef,length(knL))
@@ -84,3 +84,19 @@ for (k,kni) in enumerate(knL)
 end
 
 maximum(maximum.(sd))
+
+
+j=773
+
+trow = knLl[iknL1[j]]
+c1 = clL[trow]:clL[trow+1]
+for local_id = 0:(clL[trow+1]-1 - clL[trow])
+    println(local_id)
+    i2 = c1[1]+local_id
+    i1 = rwL[i2]
+end
+
+y0[i1]*nzL[i2]
+
+
+local_id = 866
