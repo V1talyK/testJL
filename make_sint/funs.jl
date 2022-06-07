@@ -39,3 +39,18 @@ end
 function mlin(ts)
     return collect((ts.-ts[1])./(ts[end]-ts[1]))
 end
+
+function msofts(ts, a = 4, rev = false)
+
+    x = ts.-ts[1]
+    x = x./maximum(x)
+    if rev
+        x = x[end:-1:1]
+    end
+    y = a.*x ./ sqrt.(1 .+ (a.*x).^2)
+    return y
+end
+
+
+# plt = lineplot(msofts(ts,4,true))
+#     println(plt)

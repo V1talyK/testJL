@@ -1,6 +1,6 @@
 using Dates
 include("funs.jl")
-rexp = "/home/lik/proto/testJL/make_sint/export/gpn_1"
+rexp = "/home/lik/proto/testJL/make_sint/export/gpn_2"
 
 well_prod_name = collect("PROD$i" for i = 1:11)
 well_inj_name = collect("WINJ$i" for i = 1:2)
@@ -20,7 +20,7 @@ for (k,v) in enumerate(Iterators.product(well_name, vd))
 end
 
 
-writeToFile("$rexp/operating_mode_gpn_1",[getindex.(D,1),getindex.(D,2),getindex.(D,3),getindex.(D,4)])
+writeToFile("$rexp/operating_mode_gpn_2",[getindex.(D,1),getindex.(D,2),getindex.(D,3),getindex.(D,4)])
 
 
 #operating_mode_1 - база
@@ -59,4 +59,4 @@ for (kt,vt) in enumerate(vd)
     push!(D,"")
 end
 
-writeToFile("$rexp/operating_mode_gpn_1",[D])
+writeToFile("$rexp/operating_mode_gpn_2",[D])
