@@ -10,7 +10,7 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
                                   __global const uint *sdf,
                          __local float *localSums)
  {
-  uint local_id = get_local_id(0);
+  uint lcl_id = get_lcl_id(0);
   uint group_size = get_local_size(0);
   uint gl_id = get_global_id(0);
   float s = 0.f;
@@ -46,46 +46,51 @@ slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
                                    __global const uint *sdf,
                           __local float *localSums)
   {
-   uint local_id = get_local_id(0);
+   uint lcl_id = get_local_id(0);
+   uint grp_id = get_group_id(0);
    uint group_size = get_local_size(0);
+
+   uint lc_id = get_local_id(0);
+   uint gr_id = get_group_id(0);
    uint gl_id = get_global_id(0);
+
    float s = 0.f;
    uint trow = 0;
    for (uint j = 0; j<sdf[0]; j++)
        {
        if (lvl_lng[j]>1)
          {
-          if (gl_id < lvl_lng[j])
+          if (lcl_id < lvl_lng[j])
             {
-            trow = kn1[ikn1[j]-1+gl_id]-1;
+            trow = kn1[ikn1[j]-1+lcl_id]-1;
             s = 0.f;
             for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
                {
-               s+=x[rw[i]]*nz[i];
+               s+=x[rw[i]+gr_id*16610]*nz[i];
                }
-            x[trow] = (b[trow]-s)/nz[cl1[trow+1]-2];
+            x[trow+gr_id*16610] = (b[trow+gr_id*16610]-s)/nz[cl1[trow+1]-2];
             }
          }
      else
          {
          trow = kn1[ikn1[j]-1]-1;
-         localSums[local_id] = 0.f;
+         localSums[lcl_id] = 0.f;
 
-         if (local_id < cl1[trow+1]-2 - (cl1[trow]-1))
+         if (lcl_id < cl1[trow+1]-2 - (cl1[trow]-1))
              {
-             uint i2 = cl1[trow]-1+local_id;
-             localSums[local_id] = x[rw[i2]]*nz[i2];
+             uint i2 = cl1[trow]-1+lcl_id;
+             localSums[lcl_id] = x[rw[i2]+gr_id*16610]*nz[i2];
              }
 
          for (uint stride = group_size/2; stride>0; stride /=2)
             {
              barrier(CLK_LOCAL_MEM_FENCE);
-             if (local_id < stride)
-               localSums[local_id] += localSums[local_id + stride];
+             if (lcl_id < stride)
+               localSums[lcl_id] += localSums[lcl_id + stride];
             }
-         if (local_id == 0)
+         if (lcl_id == 0)
             {
-            x[trow] = (b[trow]-localSums[0])/nz[cl1[trow+1]-2];
+            x[trow+gr_id*16610] = (b[trow+gr_id*16610]-localSums[0])/nz[cl1[trow+1]-2];
             }
          }
      barrier(CLK_GLOBAL_MEM_FENCE);
@@ -108,7 +113,7 @@ uslv_kernel = "__kernel void uslvk ( __global float *zz,
                                    __global const uint *sdf,
                           __local float *localSums)
   {
-   uint local_id = get_local_id(0);
+   uint lcl_id = get_lcl_id(0);
    uint group_size = get_local_size(0);
    uint gl_id = get_global_id(0);
    float s = 0.f;
@@ -144,11 +149,11 @@ slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
                                   __global const float *nz,
                          __local float *localSums)
  {
-  uint local_id = get_local_id(0);
+  uint lcl_id = get_lcl_id(0);
   uint group_size = get_local_size(0);
   uint gl_id = get_global_id(0);
 
-  int thid = get_local_id(0);
+  int thid = get_lcl_id(0);
   // a_d[thid + blid * 16]
 
   //sizeof(ikn1)
@@ -218,7 +223,7 @@ czz_kernel = "__kernel void czz ( __global float *zz,
                          __global float *partialSums,
                          __local float *localSums)
  {
-  uint local_id = get_local_id(0);
+  uint lcl_id = get_lcl_id(0);
   uint group_size = get_local_size(0);
   uint gl_id = get_global_id(0);
   float s = 0.f;
