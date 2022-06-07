@@ -26,7 +26,7 @@ zz_bf = cl.Buffer(Float32, ctx, (:rw,:use), hostbuf=Float32.(zz*0))
 zr_bf= cl.Buffer(Float32, ctx, (:rw, :copy), hostbuf=zeros(Float32,length(y32)))
 b_bf = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=Float32.(b))
 clL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=clL)
-rwL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=rwL)
+rwL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(rwL.-1))
 nzL_bf = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=nzL)
 
 knLn = Vector(undef,0)
@@ -88,12 +88,12 @@ maximum(maximum.(sd))
 
 j=773
 
-trow = knLl[iknL1[j]]
-c1 = clL[trow]:clL[trow+1]
-for local_id = 0:(clL[trow+1]-1 - clL[trow])
-    println(local_id)
-    i2 = c1[1]+local_id
-    i1 = rwL[i2]
+
+for j=1:774
+    trow = knLl[iknL1[j]]
+    c1 = clL[trow]:clL[trow+1]
+    println(length(c1))
+
 end
 
 y0[i1]*nzL[i2]
