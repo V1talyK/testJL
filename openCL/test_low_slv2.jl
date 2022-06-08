@@ -11,14 +11,14 @@ knL = make_order(U)
 zz = zeros(maximum(length.(knL)))
 clL, rwL, nzL = Int32.(copy(U.colptr)), Int32.(copy(U.rowval)), Float32.(copy(U.nzval));
 
-nu = 2^8
+nu = 2^3
 y32 = zeros(Float32,length(b),nu)
 y2_bf = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=y32)
 b2 = hcat([b.+i.-1 for i = 1:nu]...)
 @time y02 = L\b2
 
-BLOCK_SIZE = 1024
-lmem = cl.LocalMem(Float32, Int32(BLOCK_SIZE+1));
+BLOCK_SIZE = 512
+lmem = cl.LocalMem(Float32, Int32(BLOCK_SIZE+100));
 zz_bf = cl.Buffer(Float32, ctx, (:rw,:use), hostbuf=Float32.(zz*0))
 
 #p = cl.Program(ctx, source=slv_kernel) |> cl.build!
@@ -69,7 +69,7 @@ zzz = cl.read(queue, zz_bf)
 
 
 function slv_cl!(yy)
-    queue(krnL, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
+    queue(krnL, gs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
                                 y2_bf, b2_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem)
     #yy .= cl.read(queue, y2_bf)
     return yy

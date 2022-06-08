@@ -50,7 +50,7 @@ lvl_lng_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=lvl_lng)
 sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=[Int32(length(iknL1))])
 cl.copy!(queue, y_bf, zr_bf);
 bs = (BLOCK_SIZE,)
-@time queue(krn, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
+@time queue(krnL, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
                             y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem)
 yy = cl.read(queue, y_bf)
     sum(abs,yy.-y0)
@@ -66,7 +66,7 @@ zzz = cl.read(queue, zz_bf)
 
 
 function slv_cl!(yy)
-    queue(krn, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
+    queue(krnL, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
                                 y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem)
     yy = cl.read(queue, y_bf)
     return yy
