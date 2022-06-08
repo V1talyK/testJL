@@ -136,14 +136,13 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
      }
   }"
   p = cl.Program(ctx, source=low_slv_kernel) |> cl.build!
-  krn = cl.Kernel(p, "slv_lowM")
+  krnL = cl.Kernel(p, "slv_lowM")
 
 
 up_slv_kernel = "__kernel void slv_upM( __global float *zz,
-                                     __global const uint *kn,
                                      __global const uint *kn1,
                                      __global const uint *ikn1,
-                                     __global const uint *ikn2,
+                                     __global const uint *lvl_lng,
                                      __global float *x,
                                      __global const float *b,
                                      __global const uint *cl1,
@@ -164,7 +163,7 @@ up_slv_kernel = "__kernel void slv_upM( __global float *zz,
 
      for (uint j = 0; j<sdf[0]; j++)
          {
-         if (lc_id <= ikn2[j]-ikn1[j])
+         if (lc_id < lvl_lng[j])
             {
             trow = kn1[ikn1[j]-1+lc_id]-1;
             s = 0.f;
@@ -178,7 +177,7 @@ up_slv_kernel = "__kernel void slv_upM( __global float *zz,
        }
     }"
     p = cl.Program(ctx, source=up_slv_kernel) |> cl.build!
-    krn_U = cl.Kernel(p, "slv_upM")
+    krnU = cl.Kernel(p, "slv_upM")
 
 slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
                                   __global const uint *kn,

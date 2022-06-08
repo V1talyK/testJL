@@ -17,7 +17,7 @@ zz = zeros(maximum(length.(knL)))
 clL, rwL, nzL = Int32.(copy(U.colptr)), Int32.(copy(U.rowval)), Float32.(copy(U.nzval));
 clU, rwU, nzU = Int32.(copy(L.colptr)), Int32.(copy(L.rowval)), Float32.(copy(L.nzval));
 
-nu = 2^8
+nu = 2^6
 y32 = zeros(Float32,length(b),nu)
 x32 = zeros(Float32,length(b),nu)
 b2 = hcat([b.+i.-1 for i = 1:nu]...)
@@ -57,8 +57,9 @@ for (k,v) in enumerate(knU)
 end
 
 knLl = Int32.(vcat(knL...))
-lvl_lng = Int32.(length.(knLn))
+lvl_lngL = Int32.(length.(knLn))
 knUl = Int32.(vcat(knU...))
+lvl_lngU = Int32.(length.(knUn))
 
 iknL1 = Int32.(vcat(1,cumsum(length.(knLn)).+1)[1:end-1])
 iknL2 = Int32.(cumsum(length.(knLn)))
@@ -71,49 +72,47 @@ knU32 = map(x->Int32.(x),knUn)
 knL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=knL32[1])
 knL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=knLl)
 iknL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=iknL1)
-lvl_lng_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=lvl_lng)
+lvl_lngL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=lvl_lngL)
 
 
 knU_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=knU32[1])
 knU1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=knUl)
 iknU1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=iknU1)
-iknU2_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=iknU2)
+lvl_lngU_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=lvl_lngU)
+
 
 #queue = cl.CmdQueue(ctx, :profile)
 #@time cl.copy!(queue, zz_bf, zz_bf);
-sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknL1),L.n]))
+sdfL = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknL1),L.n]))
 cl.copy!(queue, y_bf, zr_bf);
-gs = (BLOCK_SIZE*nu,)
-bs = (BLOCK_SIZE,)
-@time queue(krnL, gs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
-                            y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem)
+gs = (BLOCK_SIZE*nu,1)
+bs = (BLOCK_SIZE,1)
+@time queue(krnL, gs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lngL_bf,
+                            y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdfL, lmem)
 yy = cl.read(queue, y_bf)
     sum(abs,yy.-vec(y0))
 
 
-sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknU1),L.n]))
+sdfU = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknU1),L.n]))
 cl.copy!(queue, x_bf, zr_bf);
-gs = (BLOCK_SIZE*nu,)
-bs = (BLOCK_SIZE,)
-@time queue(krn_U, gs, bs, zz_bf, knU_bf, knU1_bf, iknU1_bf, iknU2_bf,
-                            x_bf, y_bf, clU_bf, rwU_bf, nzU_bf, sdf, lmem)
+gs = (BLOCK_SIZE*nu,1)
+bs = (BLOCK_SIZE,1)
+@time queue(krnU, gs, bs, zz_bf, knU1_bf, iknU1_bf, lvl_lngU_bf,
+                            x_bf, y_bf, clU_bf, rwU_bf, nzU_bf, sdfU, lmem)
 xx = cl.read(queue, x_bf)
     sum(abs,xx.-vec(x0))
     mean(abs,xx.-vec(x0))
 
 
 function slv_cl!(xx)
-    sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=[Int32(length(iknL1))])
-    cl.copy!(queue, y_bf, zr_bf);
-    cl.copy!(queue, x_bf, zr_bf);
-    bs = (BLOCK_SIZE,)
-    queue(krn, bs, bs, zz_bf, knL_bf, knL1_bf, iknL1_bf, iknL2_bf,
-                                y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem)
+    #cl.copy!(queue, y_bf, zr_bf);
+    #cl.copy!(queue, x_bf, zr_bf);
+    queue(krnL, gs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lngL_bf,
+                                y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdfL, lmem)
 
-    sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=[Int32(length(iknU1))])
-    queue(krn_U, bs, bs, zz_bf, knU_bf, knU1_bf, iknU1_bf, iknU2_bf,
-                                x_bf, y_bf, clU_bf, rwU_bf, nzU_bf, sdf, lmem)
-    xx .= cl.read(queue, x_bf)
+    #queue(krn_U, gs, bs, zz_bf, knU1_bf, iknU1_bf, lvl_lngU_bf,
+    #                            x_bf, y_bf, clU_bf, rwU_bf, nzU_bf, sdfU, lmem)
+    #xx .= cl.read(queue, x_bf)
 end
 
 @btime slv_cl!($xx)
