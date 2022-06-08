@@ -11,7 +11,7 @@ knL = make_order(U)
 zz = zeros(maximum(length.(knL)))
 clL, rwL, nzL = Int32.(copy(U.colptr)), Int32.(copy(U.rowval)), Float32.(copy(U.nzval));
 
-nu = 2^12
+nu = 2^8
 y32 = zeros(Float32,length(b),nu)
 y2_bf = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=y32)
 b2 = hcat([b.+i.-1 for i = 1:nu]...)
@@ -49,7 +49,7 @@ knL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=knLl)
 iknL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=iknL1)
 lvl_lng_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=lvl_lng)
 
-sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=[Int32(length(iknL1))])
+sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknL1),L.n]))
 cl.copy!(queue, y2_bf, zr_bf);
 gs = (BLOCK_SIZE*nu,1)
 bs = (BLOCK_SIZE,1)

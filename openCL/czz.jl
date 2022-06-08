@@ -34,7 +34,45 @@ slv_kernel = "__kernel void slvk ( __global float *zz,
  p = cl.Program(ctx, source=slv_kernel) |> cl.build!
  krn = cl.Kernel(p, "slvk")
 
-slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
+
+uslv_kernel = "__kernel void uslvk ( __global float *zz,
+                                    __global const uint *kn,
+                                    __global const uint *kn1,
+                                    __global const uint *ikn1,
+                                    __global const uint *ikn2,
+                                    __global float *x,
+                                    __global const float *b,
+                                    __global const uint *cl1,
+                                    __global const uint *rw,
+                                    __global const float *nz,
+                                    __global const uint *sdf,
+                           __local float *localSums)
+   {
+    uint lcl_id = get_lcl_id(0);
+    uint group_size = get_local_size(0);
+    uint gl_id = get_global_id(0);
+    float s = 0.f;
+    uint trow = 0;
+    for (uint j = 0; j<sdf[0]; j++)
+        {
+        if (gl_id <= ikn2[j]-ikn1[j])
+           {
+           trow = kn1[ikn1[j]-1+gl_id]-1;
+           s = 0.f;
+           for (uint i = cl1[trow]; i<cl1[trow+1]-1; i++)
+              {
+              s+=x[rw[i]-1]*nz[i];
+              }
+          x[trow] = (b[trow]-s)/nz[cl1[trow]-1];
+          //x[trow] = localSums[gl_id];
+          }
+      barrier(CLK_GLOBAL_MEM_FENCE);
+      }
+   }"
+   p = cl.Program(ctx, source=uslv_kernel) |> cl.build!
+   krn_U = cl.Kernel(p, "uslvk")
+
+low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
                                    __global const uint *kn1,
                                    __global const uint *ikn1,
                                    __global const uint *lvl_lng,
@@ -46,8 +84,6 @@ slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
                                    __global const uint *sdf,
                           __local float *localSums)
   {
-   uint lcl_id = get_local_id(0);
-   uint grp_id = get_group_id(0);
    uint group_size = get_local_size(0);
 
    uint lc_id = get_local_id(0);
@@ -56,86 +92,93 @@ slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
 
    float s = 0.f;
    uint trow = 0;
+   uint step = gr_id*sdf[1];
+
    for (uint j = 0; j<sdf[0]; j++)
        {
        if (lvl_lng[j]>1)
          {
-          if (lcl_id < lvl_lng[j])
+          if (lc_id < lvl_lng[j])
             {
-            trow = kn1[ikn1[j]-1+lcl_id]-1;
+            trow = kn1[ikn1[j]-1+lc_id]-1;
             s = 0.f;
             for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
                {
-               s+=x[rw[i]+gr_id*16610]*nz[i];
+               s+=x[rw[i]+step]*nz[i];
                }
-            x[trow+gr_id*16610] = (b[trow+gr_id*16610]-s)/nz[cl1[trow+1]-2];
+            x[trow+step] = (b[trow+step]-s)/nz[cl1[trow+1]-2];
             }
          }
      else
          {
          trow = kn1[ikn1[j]-1]-1;
-         localSums[lcl_id] = 0.f;
+         localSums[lc_id] = 0.f;
 
-         if (lcl_id < cl1[trow+1]-2 - (cl1[trow]-1))
+         if (lc_id < cl1[trow+1]-2 - (cl1[trow]-1))
              {
-             uint i2 = cl1[trow]-1+lcl_id;
-             localSums[lcl_id] = x[rw[i2]+gr_id*16610]*nz[i2];
+             uint i2 = cl1[trow]-1+lc_id;
+             localSums[lc_id] = x[rw[i2]+step]*nz[i2];
              }
 
          for (uint stride = group_size/2; stride>0; stride /=2)
             {
              barrier(CLK_LOCAL_MEM_FENCE);
-             if (lcl_id < stride)
-               localSums[lcl_id] += localSums[lcl_id + stride];
+             if (lc_id < stride)
+               localSums[lc_id] += localSums[lc_id + stride];
             }
-         if (lcl_id == 0)
+         if (lc_id == 0)
             {
-            x[trow+gr_id*16610] = (b[trow+gr_id*16610]-localSums[0])/nz[cl1[trow+1]-2];
+            x[trow+step] = (b[trow+step]-localSums[0])/nz[cl1[trow+1]-2];
             }
          }
      barrier(CLK_GLOBAL_MEM_FENCE);
      barrier(CLK_LOCAL_MEM_FENCE);
      }
   }"
-  p = cl.Program(ctx, source=slv_kernel1) |> cl.build!
-  krn = cl.Kernel(p, "slvk1")
+  p = cl.Program(ctx, source=low_slv_kernel) |> cl.build!
+  krn = cl.Kernel(p, "slv_lowM")
 
-uslv_kernel = "__kernel void uslvk ( __global float *zz,
-                                   __global const uint *kn,
-                                   __global const uint *kn1,
-                                   __global const uint *ikn1,
-                                   __global const uint *ikn2,
-                                   __global float *x,
-                                   __global const float *b,
-                                   __global const uint *cl1,
-                                   __global const uint *rw,
-                                   __global const float *nz,
-                                   __global const uint *sdf,
-                          __local float *localSums)
-  {
-   uint lcl_id = get_lcl_id(0);
-   uint group_size = get_local_size(0);
-   uint gl_id = get_global_id(0);
-   float s = 0.f;
-   uint trow = 0;
-   for (uint j = 0; j<sdf[0]; j++)
-       {
-       if (gl_id <= ikn2[j]-ikn1[j])
-          {
-          trow = kn1[ikn1[j]-1+gl_id]-1;
-          s = 0.f;
-          for (uint i = cl1[trow]; i<cl1[trow+1]-1; i++)
-             {
-             s+=x[rw[i]-1]*nz[i];
-             }
-         x[trow] = (b[trow]-s)/nz[cl1[trow]-1];
-         //x[trow] = localSums[gl_id];
-         }
-     barrier(CLK_GLOBAL_MEM_FENCE);
-     }
-  }"
-  p = cl.Program(ctx, source=uslv_kernel) |> cl.build!
-  krn_U = cl.Kernel(p, "uslvk")
+
+up_slv_kernel = "__kernel void slv_upM( __global float *zz,
+                                     __global const uint *kn,
+                                     __global const uint *kn1,
+                                     __global const uint *ikn1,
+                                     __global const uint *ikn2,
+                                     __global float *x,
+                                     __global const float *b,
+                                     __global const uint *cl1,
+                                     __global const uint *rw,
+                                     __global const float *nz,
+                                     __global const uint *sdf,
+                            __local float *localSums)
+    {
+     uint group_size = get_local_size(0);
+
+     uint lc_id = get_local_id(0);
+     uint gr_id = get_group_id(0);
+     uint gl_id = get_global_id(0);
+
+     float s = 0.f;
+     uint trow = 0;
+     uint step = gr_id*sdf[1];
+
+     for (uint j = 0; j<sdf[0]; j++)
+         {
+         if (lc_id <= ikn2[j]-ikn1[j])
+            {
+            trow = kn1[ikn1[j]-1+lc_id]-1;
+            s = 0.f;
+            for (uint i = cl1[trow]; i<cl1[trow+1]-1; i++)
+               {
+               s+=x[rw[i]+step]*nz[i];
+               }
+           x[trow+step] = (b[trow+step]-s)/nz[cl1[trow]-1];
+           }
+       barrier(CLK_GLOBAL_MEM_FENCE);
+       }
+    }"
+    p = cl.Program(ctx, source=up_slv_kernel) |> cl.build!
+    krn_U = cl.Kernel(p, "slv_upM")
 
 slv_kernel1 = "__kernel void slvk1 ( __global float *zz,
                                   __global const uint *kn,
