@@ -14,7 +14,7 @@ y32 = zeros(Float32,length(b))
 y_bf = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=y32)
 y0 = L\b
 
-BLOCK_SIZE = 512
+BLOCK_SIZE = 128
 lmem_min_sz = get_max_wide(knL,clL)[1]
 lmem = cl.LocalMem(Float32, Int32(BLOCK_SIZE+1));
 zz_bf = cl.Buffer(Float32, ctx, (:rw,:use), hostbuf=Float32.(zz*0))

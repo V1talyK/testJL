@@ -8,12 +8,11 @@ include(joinpath(rsrc,"openCL/libs.jl"))
 include(joinpath(rsrc,"solv/tsty.jl"))
 
 BS = [2^i for i in 7:10]
-tt = zeros(6,length(BS))
+tt = zeros(8,length(BS))
 
-lmem_sz = get_max_wide(knL,clL)[1]
-lmem = cl.LocalMem(Float32, Int32(lmem_sz+1));
+lmem_min_sz = get_max_wide(knL,clL)[1]
 
-for pwr = 1:5
+for pwr = 1:8
     nu = 2^pwr
     y32 = zeros(Float32,length(b),nu)
     y2_bf = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=y32)
@@ -47,6 +46,7 @@ for pwr = 1:5
         iknL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=iknL1)
         lvl_lng_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=lvl_lng)
 
+        lmem = cl.LocalMem(Float32, Int32(BLOCK_SIZE+1))
         sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknL1),L.n]))
         cl.copy!(queue, y2_bf, zr_bf);
         gs = (BLOCK_SIZE*nu,1)
