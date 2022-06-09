@@ -1,11 +1,10 @@
-using LinearAlgebra, OpenCL, SparseArrays, BenchmarkTools,
- LoopVectorization, BenchmarkTools, UnicodePlots
+using LinearAlgebra, OpenCL, SparseArrays, BenchmarkTools, UnicodePlots
 device, ctx, queue = cl.create_compute_context()
 
 rsrc=dirname(dirname(Base.source_path()));
 include(joinpath(rsrc,"openCL/get_Ab.jl"))
+include(joinpath(rsrc,"openCL/libs.jl"))
 include(joinpath(rsrc,"solv/tsty.jl"))
-
 
 knL = make_order(U)
 zz = zeros(maximum(length.(knL)))
@@ -15,7 +14,8 @@ y32 = zeros(Float32,length(b))
 y_bf = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=y32)
 y0 = L\b
 
-BLOCK_SIZE = 1024
+BLOCK_SIZE = 512
+lmem_min_sz = get_max_wide(knL,clL)[1]
 lmem = cl.LocalMem(Float32, Int32(BLOCK_SIZE+1));
 zz_bf = cl.Buffer(Float32, ctx, (:rw,:use), hostbuf=Float32.(zz*0))
 
@@ -29,12 +29,7 @@ clL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=clL)
 rwL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(rwL.-1))
 nzL_bf = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=nzL)
 
-knLn = Vector(undef,0)
-for (k,v) in enumerate(knL)
-    for (k1,v1) = enumerate(Iterators.partition(v,BLOCK_SIZE))
-        push!(knLn,v1)
-    end
-end
+knLn = cut_lvl_by_BS(knL,BLOCK_SIZE);
 
 knLl = Int32.(vcat(knLn...))
 lvl_lng = Int32.(length.(knLn))
@@ -47,7 +42,7 @@ knL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=knLl)
 iknL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=iknL1)
 lvl_lng_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=lvl_lng)
 
-sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=[Int32(length(iknL1))])
+sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknL1),L.n]))
 cl.copy!(queue, y_bf, zr_bf);
 bs = (BLOCK_SIZE,)
 @time queue(krnL, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
@@ -58,7 +53,7 @@ yy = cl.read(queue, y_bf)
     #for i=1:10 println(sum(x0[kn_new[i]].-xx[kn_new[i]])); end
 
 #for i=1:20 println(sum(x0[kn_new[i]].-xxx[kn_new[i]])); end
-e1r = [sum(abs,x0[kn_new[i]].-xx[kn_new[i]]) for i=1:length(kn_new)]
+e1r = [sum(abs,y0[knLn[i]].-yy[knLn[i]]) for i=1:length(knLn)]
     println(lineplot(e1r))
 
 @time cl.copy!(queue, x_buff, x0_buff);
@@ -74,27 +69,18 @@ end
 
 @btime slv_cl!($yy)
 
-
-sd = Vector(undef,length(knL))
-for (k,kni) in enumerate(knL)
-    sd[k] = []
-    for trow in kni
-        push!(sd[k],length(clL[trow]:clL[trow+1]-1))
-    end
-end
-
-maximum(maximum.(sd))
+get_max_wide(knLn,clL)
 
 
 j=773
 
-
-for j=1:774
+len = zeros(Int64,length(knLn))
+for j=1:length(knLn)
     trow = knLl[iknL1[j]]
     c1 = clL[trow]:clL[trow+1]
-    println(length(c1))
-
+    len[j] = length(c1)
 end
+maximum(len)
 
 y0[i1]*nzL[i2]
 

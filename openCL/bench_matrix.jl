@@ -1,7 +1,19 @@
-tt = zeros(4,4)
-BS = [2^i for i in 7:9]
+using LinearAlgebra, OpenCL, SparseArrays, BenchmarkTools,
+BenchmarkTools, UnicodePlots
+device, ctx, queue = cl.create_compute_context()
 
-for pwr = 1:3
+rsrc=dirname(dirname(Base.source_path()));
+include(joinpath(rsrc,"openCL/get_Ab.jl"))
+include(joinpath(rsrc,"openCL/libs.jl"))
+include(joinpath(rsrc,"solv/tsty.jl"))
+
+BS = [2^i for i in 7:10]
+tt = zeros(6,length(BS))
+
+lmem_sz = get_max_wide(knL,clL)[1]
+lmem = cl.LocalMem(Float32, Int32(lmem_sz+1));
+
+for pwr = 1:5
     nu = 2^pwr
     y32 = zeros(Float32,length(b),nu)
     y2_bf = cl.Buffer(Float32, ctx, (:rw, :use), hostbuf=y32)
@@ -9,7 +21,6 @@ for pwr = 1:3
 
     @time y02 = L\b2
 
-    lmem = cl.LocalMem(Float32, Int32(600));
     zz_bf = cl.Buffer(Float32, ctx, (:rw,:use), hostbuf=Float32.(zz*0))
 
     #p = cl.Program(ctx, source=slv_kernel) |> cl.build!
@@ -23,13 +34,8 @@ for pwr = 1:3
     nzL_bf = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=nzL)
 
     for (k2,BLOCK_SIZE) in enumerate(BS)
-        knLn = Vector(undef,0)
-        for (k,v) in enumerate(knL)
-            for (k1,v1) = enumerate(Iterators.partition(v,BLOCK_SIZE))
-                push!(knLn,v1)
-            end
-        end
 
+        knLn = cut_lvl_by_BS(knL,BLOCK_SIZE);
         knLl = Int32.(vcat(knLn...))
         lvl_lng = Int32.(length.(knLn))
         iknL1 = Int32.(vcat(1,cumsum(length.(knLn)).+1)[1:end-1])
@@ -70,4 +76,4 @@ function slv_cl!(yy)
 end
 
 
-tt = @belapsed 1 
+tt = @belapsed 1

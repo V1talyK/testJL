@@ -84,7 +84,7 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
                                    __global const uint *sdf,
                           __local float *localSums)
   {
-   uint group_size = get_local_size(0);
+   uint gr_sz = get_local_size(0);
 
    uint lc_id = get_local_id(0);
    uint gr_id = get_group_id(0);
@@ -114,13 +114,16 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
          trow = kn1[ikn1[j]-1]-1;
          localSums[lc_id] = 0.f;
 
-         if (lc_id < cl1[trow+1]-2 - (cl1[trow]-1))
-             {
-             uint i2 = cl1[trow]-1+lc_id;
-             localSums[lc_id] = x[rw[i2]+step]*nz[i2];
+         float ss = (cl1[trow+1]-2 - (cl1[trow]-1))/gr_sz;
+         for (uint jj = 0; jj<ss+1; jj++)
+            {
+            if ((lc_id+jj*gr_sz) < (cl1[trow+1]-2 - (cl1[trow]-1)))
+                {
+                uint i2 = cl1[trow]-1+lc_id+jj*gr_sz;
+                localSums[lc_id] += x[rw[i2]+step]*nz[i2];
+                }
              }
-
-         for (uint stride = group_size/2; stride>0; stride /=2)
+         for (uint stride = gr_sz/2; stride>0; stride /=2)
             {
              barrier(CLK_LOCAL_MEM_FENCE);
              if (lc_id < stride)
