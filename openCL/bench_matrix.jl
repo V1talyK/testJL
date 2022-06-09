@@ -7,7 +7,7 @@ include(joinpath(rsrc,"openCL/get_Ab.jl"))
 include(joinpath(rsrc,"openCL/libs.jl"))
 include(joinpath(rsrc,"solv/tsty.jl"))
 
-BS = [2^i for i in 7:10]
+BS = [2^i for i in 6:7]
 tt = zeros(8,length(BS))
 
 lmem_min_sz = get_max_wide(knL,clL)[1]
