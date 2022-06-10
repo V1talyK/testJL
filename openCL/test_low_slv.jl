@@ -29,7 +29,8 @@ clL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=clL)
 rwL_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.(rwL.-1))
 nzL_bf = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=nzL)
 
-knLn = cut_lvl_by_BS(knL,BLOCK_SIZE);
+knLn, lvl = cut_lvl_by_BS(knL,BLOCK_SIZE);
+llvl = findlast(lvl.==1)
 
 knLl = Int32.(vcat(knLn...))
 lvl_lng = Int32.(length.(knLn))
@@ -42,7 +43,7 @@ knL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=knLl)
 iknL1_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=iknL1)
 lvl_lng_bf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=lvl_lng)
 
-sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknL1),L.n]))
+sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknL1),L.n, llvl]))
 cl.copy!(queue, y_bf, zr_bf);
 bs = (BLOCK_SIZE,)
 @time queue(krnL, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,

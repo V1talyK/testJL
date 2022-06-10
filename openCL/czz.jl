@@ -101,12 +101,18 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
           if (lc_id < lvl_lng[j])
             {
             trow = kn1[ikn1[j]-1+lc_id]-1;
-            s = 0.f;
-            for (uint i = cl1[trow]-1; i<cl1[trow+1]-2; i++)
+            if (j<sdf[2])
+                {
+                x[trow+step] = b[trow+step]/nz[cl1[trow+1]-2];
+                }
+            else{
+            s = x[rw[cl1[trow]-1]+step]*nz[cl1[trow]-1];
+            for (uint i = cl1[trow]; i<cl1[trow+1]-2; i++)
                {
-               s+=x[rw[i]+step]*nz[i];
+               s+= x[rw[i]+step]*nz[i];
                }
             x[trow+step] = (b[trow+step]-s)/nz[cl1[trow+1]-2];
+            }
             }
          }
      else

@@ -14,10 +14,12 @@ end
 
 function cut_lvl_by_BS(knL,BLOCK_SIZE)
     knLn = Vector(undef,0)
+    lvl = Vector(undef,0)
     for (k,v) in enumerate(knL)
         for (k1,v1) = enumerate(Iterators.partition(v,BLOCK_SIZE))
             push!(knLn,v1)
+            push!(lvl,k)
         end
     end
-    return knLn
+    return knLn, lvl
 end
