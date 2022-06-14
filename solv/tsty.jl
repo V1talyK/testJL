@@ -314,10 +314,12 @@ function make_order(U0)
     while flag
         rn = []
         for i=1:U.n
+            if length(rn)<128
             if U.colptr[i]==U.colptr[i+1]-1
             #if length(L[i,:].nzind)==1
             #if count(i.==L.rowval)==1
                 push!(rn,i)
+            end
             end
         end
         push!(kn,[])

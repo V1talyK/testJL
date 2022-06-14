@@ -31,7 +31,7 @@ nzL_bf = cl.Buffer(Float32, ctx, (:r, :copy), hostbuf=nzL)
 
 knLn, lvl = cut_lvl_by_BS(knL,BLOCK_SIZE);
 llvl = findlast(lvl.==1)
-
+llvl = 1
 knLl = Int32.(vcat(knLn...))
 lvl_lng = Int32.(length.(knLn))
 iknL1 = Int32.(vcat(1,cumsum(length.(knLn)).+1)[1:end-1])
