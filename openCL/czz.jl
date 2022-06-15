@@ -117,18 +117,42 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
          }
          if (lvl_lng[j]==2)
              {
-              trow = kn1[ikn1[j]-1+lc_id]-1;
               localSums[lc_id] = 0.f;
+              uint prt = 0;
+              if (lc_id<gr_sz/2){
+                  trow = kn1[ikn1[j]-1+0]-1;
+                  prt = 0;
+                  }
+              else{
+                  trow = kn1[ikn1[j]-1+1]-1;
+                  prt = 1;
+                  }
 
-              float ss = (cl1[trow+1]-2 - (cl1[trow]-1))/gr_sz;
+              float ss = (cl1[trow+1]-2 - (cl1[trow]-1))/(gr_sz/2);
               for (uint jj = 0; jj<ss+1; jj++)
                  {
-                 if ((lc_id+jj*gr_sz) < (cl1[trow+1]-2 - (cl1[trow]-1)))
+                 if ((lc_id-(prt*gr_sz/2)+jj*gr_sz/2) < (cl1[trow+1]-2 - (cl1[trow]-1)))
                      {
-                     uint i2 = cl1[trow]-1+lc_id+jj*gr_sz;
+                     uint i2 = cl1[trow]-1+lc_id-(prt*gr_sz/2)+jj*(gr_sz/2);
                      localSums[lc_id] += x[rw[i2]+step]*nz[i2];
                      }
                   }
+              for (uint stride = gr_sz/4; stride>0; stride /=2)
+                 {
+                  barrier(CLK_LOCAL_MEM_FENCE);
+                  //if (lc_id < stride)
+                    //localSums[lc_id] += localSums[lc_id + stride];
+                if ((lc_id-prt*gr_sz/2) < stride)
+                  localSums[lc_id] += localSums[lc_id + stride];
+                 }
+             if (lc_id == 0)
+                {
+                x[trow+step] = (b[trow+step]-localSums[0])/nz[cl1[trow+1]-2];
+                }
+            if (lc_id == gr_sz/2)
+               {
+               x[trow+step] = (b[trow+step]-localSums[gr_sz/2])/nz[cl1[trow+1]-2];
+               }
              }
      else
          {
