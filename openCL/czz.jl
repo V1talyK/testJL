@@ -96,7 +96,7 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
 
    for (uint j = 0; j<sdf[0]; j++)
        {
-       if (lvl_lng[j]>2)
+       if (lvl_lng[j]>20)
          {
           if (lc_id < lvl_lng[j])
             {
@@ -115,44 +115,43 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
             }
             }
          }
-         if (lvl_lng[j]==2)
+         if (lvl_lng[j]<=20 && lvl_lng[j]>=2)
              {
               localSums[lc_id] = 0.f;
-              uint prt = 0;
-              if (lc_id<gr_sz/2){
-                  trow = kn1[ikn1[j]-1+0]-1;
-                  prt = 0;
-                  }
-              else{
-                  trow = kn1[ikn1[j]-1+1]-1;
-                  prt = 1;
-                  }
+              uint v = lvl_lng[j];
+              v--;
+              v |= v >> 1;
+              v |= v >> 2;
+              v |= v >> 4;
+              v |= v >> 8;
+              v |= v >> 16;
+              v |= v >> 32;
+              v++;
 
-              float ss = (cl1[trow+1]-2 - (cl1[trow]-1))/(gr_sz/2);
+              uint mgr_sz = gr_sz/v;
+              uint prt = lc_id/mgr_sz;
+              trow = kn1[ikn1[j]-1+prt]-1;
+
+              float ss = (cl1[trow+1]-2 - (cl1[trow]-1))/mgr_sz;
               for (uint jj = 0; jj<ss+1; jj++)
                  {
-                 if ((lc_id-(prt*gr_sz/2)+jj*gr_sz/2) < (cl1[trow+1]-2 - (cl1[trow]-1)))
+                 if ((lc_id-(prt*mgr_sz)+jj*mgr_sz) < (cl1[trow+1]-2 - (cl1[trow]-1)))
                      {
-                     uint i2 = cl1[trow]-1+lc_id-(prt*gr_sz/2)+jj*(gr_sz/2);
+                     uint i2 = cl1[trow]-1+lc_id-(prt*mgr_sz)+jj*mgr_sz;
                      localSums[lc_id] += x[rw[i2]+step]*nz[i2];
                      }
                   }
-              for (uint stride = gr_sz/4; stride>0; stride /=2)
+              for (uint stride = mgr_sz/2; stride>0; stride /=2)
                  {
                   barrier(CLK_LOCAL_MEM_FENCE);
-                  //if (lc_id < stride)
-                    //localSums[lc_id] += localSums[lc_id + stride];
-                if ((lc_id-prt*gr_sz/2) < stride)
-                  localSums[lc_id] += localSums[lc_id + stride];
+                  if ((lc_id-prt*mgr_sz) < stride)
+                      localSums[lc_id] += localSums[lc_id + stride];
                  }
-             if (lc_id == 0)
+             if (lc_id == prt*mgr_sz)
                 {
-                x[trow+step] = (b[trow+step]-localSums[0])/nz[cl1[trow+1]-2];
+                x[trow+step] = (b[trow+step]-localSums[lc_id])/nz[cl1[trow+1]-2];
                 }
-            if (lc_id == gr_sz/2)
-               {
-               x[trow+step] = (b[trow+step]-localSums[gr_sz/2])/nz[cl1[trow+1]-2];
-               }
+
              }
      else
          {
