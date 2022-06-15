@@ -96,7 +96,7 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
 
    for (uint j = 0; j<sdf[0]; j++)
        {
-       if (lvl_lng[j]>1)
+       if (lvl_lng[j]>2)
          {
           if (lc_id < lvl_lng[j])
             {
@@ -115,6 +115,21 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
             }
             }
          }
+         if (lvl_lng[j]==2)
+             {
+              trow = kn1[ikn1[j]-1+lc_id]-1;
+              localSums[lc_id] = 0.f;
+
+              float ss = (cl1[trow+1]-2 - (cl1[trow]-1))/gr_sz;
+              for (uint jj = 0; jj<ss+1; jj++)
+                 {
+                 if ((lc_id+jj*gr_sz) < (cl1[trow+1]-2 - (cl1[trow]-1)))
+                     {
+                     uint i2 = cl1[trow]-1+lc_id+jj*gr_sz;
+                     localSums[lc_id] += x[rw[i2]+step]*nz[i2];
+                     }
+                  }
+             }
      else
          {
          trow = kn1[ikn1[j]-1]-1;

@@ -315,11 +315,11 @@ function make_order(U0)
         rn = []
         for i=1:U.n
             if length(rn)<128
-            if U.colptr[i]==U.colptr[i+1]-1
-            #if length(L[i,:].nzind)==1
-            #if count(i.==L.rowval)==1
-                push!(rn,i)
-            end
+                if U.colptr[i]==U.colptr[i+1]-1
+                #if length(L[i,:].nzind)==1
+                #if count(i.==L.rowval)==1
+                    push!(rn,i)
+                end
             end
         end
         push!(kn,[])
@@ -354,9 +354,11 @@ function make_order1(L0)
         for i=U.n:-1:1
             #if length(L[i,:].nzind)==1
             #sdf .= i.==U.rowval
-            if L.colptr[i]==L.colptr[i+1]-1
+            if length(rn)<64
+                if L.colptr[i]==L.colptr[i+1]-1
             #if count(sdf)==1
-                push!(rn,i)
+                    push!(rn,i)
+                end
             end
         end
         push!(kn,[])
