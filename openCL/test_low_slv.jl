@@ -17,6 +17,8 @@ y0 = L\b
 BLOCK_SIZE = 128
 lmem_min_sz = get_max_wide(knL,clL)[1]
 lmem = cl.LocalMem(Float32, Int32(BLOCK_SIZE+1));
+lx = cl.LocalMem(Float32, Int32(BLOCK_SIZE*10));
+ly = cl.LocalMem(Float32, Int32(BLOCK_SIZE));
 zz_bf = cl.Buffer(Float32, ctx, (:rw,:use), hostbuf=Float32.(zz*0))
 
 #p = cl.Program(ctx, source=slv_kernel) |> cl.build!
@@ -47,7 +49,7 @@ sdf = cl.Buffer(Int32, ctx, (:r, :copy), hostbuf=Int32.([length(iknL1),L.n, llvl
 cl.copy!(queue, y_bf, zr_bf);
 bs = (BLOCK_SIZE,)
 @time queue(krnL, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
-                            y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem)
+                            y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem,lx,ly)
 yy = cl.read(queue, y_bf)
     sum(abs,yy.-y0)
     #for i=1:10 println(sum(x0[kn[i]].-xx[kn[i]])); end
@@ -63,7 +65,7 @@ zzz = cl.read(queue, zz_bf)
 
 function slv_cl!(yy)
     queue(krnL, bs, bs, zz_bf, knL1_bf, iknL1_bf, lvl_lng_bf,
-                                y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem)
+                                y_bf, b_bf, clL_bf, rwL_bf, nzL_bf, sdf, lmem,lx,ly)
     yy = cl.read(queue, y_bf)
     return yy
 end
