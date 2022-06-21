@@ -107,8 +107,8 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
             for (uint i = cl1[trow]; i<cl1[trow+1]-2; i++)
                {
                lclx[lc_id] = x[rw[i]+step];
-               lcly[lc_id] = nz[i];
-               s+= lclx[lc_id]*lcly[lc_id];
+               //lcly[lc_id] = nz[i];
+               s+= lclx[lc_id]*nz[i];
                }
             x[trow+step] = (b[trow+step]-s)/nz[cl1[trow+1]-2];
             }
