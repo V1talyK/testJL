@@ -24,6 +24,7 @@ function calc(pa, qi, qp, p00, pf, a)
         p[t] = A*B
         p0 = p[t]
         Δp = pf[t]-p0
+        Δp = ifelse(isnan(Δp),0.,Δp)
 
         dA = dP .+ [a[2]*qi[t]-qp[t]+a[3]*pa, a[1]*qi[t], a[1]*pa]
         dP .= dA.*B + A.*dB
@@ -51,22 +52,25 @@ function calc(pa, qi, qp, p00, pf, a)
 end
 
 
-function sim(pa, qi, qp, p00, a)
+function sim(pa, qi, qp, p00, a,dP0)
     nt = length(qi)
     p0 = p00
     p = zeros(nt)
-    dP = zeros(3)
-    dPT = zeros(3,nt)
+    dP = zeros(4)
+    dP[1:3].=dP0
+    dP[4] = 1.
+    dA = zeros(4)
+    dPT = zeros(4,nt)
 
     B = 1. / (1+a[3]*a[1])
-    dB = [-a[3]/(1+a[1]*a[3])^2, 0, -a[1]/(1+a[1]*a[3])^2]
+    dB = [-a[3]/(1+a[1]*a[3])^2, 0., -a[1]/(1+a[1]*a[3])^2, 0.]
 
     for t = 1:nt
         A = p0 + a[1]*(a[2]*qi[t]-qp[t]+a[3]*pa)
         p[t] = A*B
         p0 = p[t]
 
-        dA = dP .+ [a[2]*qi[t]-qp[t]+a[3]*pa, a[1]*qi[t], a[1]*pa]
+        dA .= dP .+ [a[2]*qi[t]-qp[t]+a[3]*pa, a[1]*qi[t], a[1]*pa, 0.]
         dP .= dA.*B + A.*dB
         dPT[:,t] = dP;
     end
@@ -86,12 +90,12 @@ function adp_fun(maxI, a0, nt, pa, qi, qp, p00, pf0)
     max_dJ_dx = 0.
     for j=1:maxI
         p, dJ_dx, HH, dPT, d2PT = calc(pa, qi, qp, p00, pf0, a)
-        JJ[j] = sum(abs2,pf0.-p)
+        JJ[j] = sum(abs2,filter(!isnan,pf0.-p))
         mn = dJ_dx./max(maximum(abs, dJ_dx),max_dJ_dx)
         max_dJ_dx = max(maximum(abs, dJ_dx),max_dJ_dx)
         a_opt .= a;
         a .= a.*(1 .- 0.10*mn)
-        println(dJ_dx," ",a_opt)
+        #println(dJ_dx," ",a_opt)
     end
     println(lineplot(JJ))
     return  p, dJ_dx, dPT, d2PT, HH, a_opt
@@ -110,21 +114,20 @@ function tocsv(rsrc,nm,v...)
     end # the fi
 end
 
-mape(xf,xc) = mean(abs,(xf.-xc)./xf)
-
 function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,p,pf,nt)
     x = H0\(H0*x0.-dJ_dx)
     d2P_dx2 = d2PT'
     dH_dp = LinearAlgebra.diagm(0 => -2*sum(d2P_dx2,dims=1)[:])
     dJx_dp = -2*sum(dPT,dims=2)[:]
 
-    Jf = sum(abs2,p.-pf)/(nt-3)
+    N = count(.!isnan.(pf))
+    Jf = sum(abs2,filter(!isnan,p.-pf))/(N-3)
 
     dx_dp = H0\(dH_dp*(x0-x)-dJx_dp)
-    Sx = sqrt.(dx_dp.^2 .*Jf.^2)
+    Sx = sqrt.(dx_dp.^2 .*Jf)
     Sxs = Sx./sqrt(nt)
 
-    tp = 2.2
+    tp = ifelse(N==6,2.57,2.2)
     Δx = tp*Sxs
 
     for (k,v) in enumerate(zip(x0,Δx))
@@ -132,3 +135,6 @@ function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,p,pf,nt)
     end
     return Δx
 end
+
+mape(xf,xc) = mean(abs,filter(!isnan,(xf.-xc)./xf))
+lf(xf,xc) = sum(abs2,filter(!isnan,xf.-xc))
