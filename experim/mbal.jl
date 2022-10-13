@@ -57,6 +57,9 @@ qpp = qp[end]*ones(ntp);
 pp, dPTp = sim(pa, qip, qpp, p[end], x_opt,dPT[:,end])
 Δpp = sqrt.(sum((dPTp.*vcat(Δx,Δp[end])).^2,dims=1)[:])
 
+foo(x) =  sim(pa, qip, qpp, p[end], x, dPT[:,end])[1]
+ForwardDiff.jacobian(foo, x_opt)
+
 lineplot!(plt,vtp,pp)
     lineplot!(plt, vtp,pp.+Δpp)
     lineplot!(plt, vtp,pp.-Δpp)

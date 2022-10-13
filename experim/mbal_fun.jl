@@ -55,12 +55,13 @@ end
 function sim(pa, qi, qp, p00, a,dP0)
     nt = length(qi)
     p0 = p00
-    p = zeros(nt)
+    p = Vector(undef,nt)
     dP = zeros(4)
     dP[1:3].=dP0
     dP[4] = 1.
     dA = zeros(4)
     dPT = zeros(4,nt)
+    dPT = Vector(undef,nt)
 
     B = 1. / (1+a[3]*a[1])
     dB = [-a[3]/(1+a[1]*a[3])^2, 0., -a[1]/(1+a[1]*a[3])^2, 0.]
@@ -70,9 +71,9 @@ function sim(pa, qi, qp, p00, a,dP0)
         p[t] = A*B
         p0 = p[t]
 
-        dA .= dP .+ [a[2]*qi[t]-qp[t]+a[3]*pa, a[1]*qi[t], a[1]*pa, 0.]
-        dP .= dA.*B + A.*dB
-        dPT[:,t] = dP;
+        dA = dP .+ [a[2]*qi[t]-qp[t]+a[3]*pa, a[1]*qi[t], a[1]*pa, 0.]
+        dP = dA.*B + A.*dB
+        dPT[t] = dP;
     end
     return p, dPT
 end
@@ -127,7 +128,8 @@ function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,p,pf,nt)
     Sx = sqrt.(dx_dp.^2 .*Jf)
     Sxs = Sx./sqrt(nt)
 
-    tp = ifelse(N==6,2.57,2.2)
+    #tp = ifelse(N==6,2.57,2.2)
+    tp = quantile(TDist(N-1),0.975)
     Δx = tp*Sxs
 
     for (k,v) in enumerate(zip(x0,Δx))
