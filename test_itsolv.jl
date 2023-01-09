@@ -1,5 +1,6 @@
 using IterativeSolvers, Preconditioners, IncompleteLU, LinearAlgebra, BenchmarkTools
 using SuiteSparse, SparseArrays
+using CuthillMcKee
 LinearAlgebra.BLAS.set_num_threads(1) #set_num_threads
 
 @btime x0 = A\b;
@@ -29,11 +30,14 @@ x11 = copy(x1)
 
 @btime IterativeSolvers.jacobi!(x2, mA, b; maxiter=10)
 
+p = symrcm(mA)
+mA = mA[:,p]
+mA = mA[p,:]
 
-
-@time x2 = IterativeSolvers.cg(A, b; Pl = LUi);
+@btime x2 = IterativeSolvers.cg(A, b; Pl = LUi);
 
 @btime IterativeSolvers.cg!($x2,$mA, $b; Pl = $LUi);
+
 @profiler IterativeSolvers.cg!(x2,mA, b; Pl = LUi);
 IterativeSolvers.cg!(x2,mA, b; Pl = LL);
 
@@ -85,7 +89,7 @@ sum(abs.(x0-x4))
 
 @time p = CholeskyPreconditioner(mA, 2)
 @time p = AMGPreconditioner(A)
-@time LUi = ilu(mA, τ = 0.000001)
+@time LUi = ilu(mA, τ = 0.01)
 
 x6 = @time jacobi(A, b; maxiter=1000, Pl = LUi)
 sum(abs.(x0-x6))

@@ -29,7 +29,7 @@ function repack(knLn, clL, rwL)
     for (k1, v1) in enumerate(knLn)
         fg[k1] = []
         for (k2,v2) in enumerate(v1)
-            c1 = clL[v2]:clL[v2+1]-1
+            c1 = clL[v2]:clL[v2+1]-2
             push!(fg[k1],rwL[c1])
         end
     end
@@ -40,7 +40,7 @@ function repack(knLn, clL, rwL)
     end
     return fl
 end
-
+#lineplot(length.(unique.(map(i->vcat(fg[i]...),1:800))))
 function test_kn(knLn)
     llvl = 1
     knLl = Int32.(vcat(knLn...))

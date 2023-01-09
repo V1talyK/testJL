@@ -102,7 +102,7 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
          {
           if (lc_id < lvl_lng[j])
             {
-            trow = list_of_cell[ind_new_lvl[j]-1+lc_id]-1;
+            trow = list_of_cell[ind_new_lvl[j]+lc_id];
             s = x[rw[cl1[trow]-1]+step]*nz[cl1[trow]-1];
             for (uint i = cl1[trow]; i<cl1[trow+1]-2; i++)
                {
@@ -128,7 +128,7 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
 
               uint mgr_sz = gr_sz/v;
               uint prt = lc_id/mgr_sz;
-              trow = list_of_cell[ind_new_lvl[j]-1+prt]-1;
+              trow = list_of_cell[ind_new_lvl[j]+prt];
 
               float ss = (cl1[trow+1]-2 - (cl1[trow]-1))/mgr_sz;
               for (uint jj = 0; jj<ss+1; jj++)
@@ -156,7 +156,7 @@ low_slv_kernel = "__kernel void slv_lowM( __global float *zz,
              }
      else
          {
-         trow = list_of_cell[ind_new_lvl[j]-1]-1;
+         trow = list_of_cell[ind_new_lvl[j]];
          localSums[lc_id] = 0.f;
 
          float ss = (cl1[trow+1]-2 - (cl1[trow]-1))/gr_sz;
