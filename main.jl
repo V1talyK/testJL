@@ -1,7 +1,7 @@
 using JLD, SparseArrays, BenchmarkTools, LinearAlgebra
 rsrc=dirname(Base.source_path());
-d = JLD.load(joinpath(r,"myfile.jld"));
-d = JLD.load(joinpath(r,"myfile200k.jld"));
+d = JLD.load(joinpath(rsrc,"myfile.jld"));
+d = JLD.load(joinpath(rsrc,"myfile200k.jld"));
 d = JLD.load(joinpath("/home/lik/Документы/proto/testJL","myfile200k.jld"));
 
 A=d["A"];
@@ -17,7 +17,7 @@ b=d["b"];
 mA = -A;
 SparseArrays.sparse!
 
-@time x = A\b;
+@btime x = A\b;
 sb = sparse(b)
 @time x = A\sb;
 using AlgebraicMultigrid
