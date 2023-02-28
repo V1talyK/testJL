@@ -43,11 +43,12 @@ for t = 1:nt
     P_opt[t] = Ki[t]*P1[t] + (1-Ki[t])*(P_opt0 + qt)
     Eek = Eek1
     qt = q[t]
+    P_opt0 = P_opt[t]
 end
 plt = lineplot(Ki)
     println(plt)
 
 plt = lineplot(P_opt; name ="klm")
     lineplot!(plt,P; name = "dflt")
-    lineplot!(plt,P1; name = "rmd")
+    scatterplot!(plt,P1; name = "rnd")
     println(plt)
