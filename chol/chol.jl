@@ -6,6 +6,16 @@ function hand_cholS(A)
     Lr = zeros(Int64,0)
     Lc = zeros(Int64,0)
     Lv = zeros(Float64,0)
+
+    Lr2 = zeros(Int64,0)
+    Lc2 = zeros(Int64,0)
+    Lv2 = zeros(Float64,0)
+
+    LL = Vector{Array{Float32,1}}(undef,n)
+    for i=1:n
+        LL[i] = zeros(Float32, n)
+    end
+
     Ld = zeros(n)
 
     push!(Lr,1)
@@ -18,6 +28,8 @@ function hand_cholS(A)
         L[A.rowval[i],1] = A.nzval[i]/Ld[1]
         push!(Lr,A.rowval[i])
         push!(Lv,A.nzval[i]/Lv[1])
+
+        LL[A.rowval[i]][1] = A.nzval[i]/Lv[1]
     end
     push!(Lc,length(Lr)+1)
 
@@ -41,6 +53,7 @@ function hand_cholS(A)
                 Ld[j] = sqrt(A.nzval[i] - s)
                 push!(Lr,j)
                 push!(Lv,sqrt(A.nzval[i] - s))
+                LL[A.rowval[i]][j] = sqrt(A.nzval[i] - s)
             end
         end
         # for i = A.colptr[j]:A.colptr[j+1]-1
@@ -57,26 +70,34 @@ function hand_cholS(A)
             # for k = 1:j-1
             #     s += L[i,k]*L[j,k]
             # end
-            s = 0.0
+            s0 = 0.0
             sj = 0
             si = 0
-            for k1=1:j-1
-                for k = Lc[k1]:Lc[k1+1]-1
-                    if Lr[k]==j
-                        sj = Lv[k]
-                    end
-                    if Lr[k]==i
-                        si = Lv[k]
-                    end
-                end
-                s+=si*sj
-                si = 0
-                sj = 0
-            end
+            # for k1=1:j-1
+            #     # for k = Lc[k1]:Lc[k1+1]-1
+            #     #     if Lr[k]==j
+            #     #         sj = Lv[k]
+            #     #     end
+            #     #     if Lr[k]==i
+            #     #         si = Lv[k]
+            #     #     end
+            #     # end
+            #     # s+=si*sj
+            #     # si = 0
+            #     # sj = 0
+            #     #println(j,i,k1)
+            #     s+=LL[i][k1]*LL[j][k1]
+            # end
+            s = LinearAlgebra.BLAS.dot(j-1,LL[i],1,LL[j],1)
+            # println(j," ",i," ",s0," ",s)
+            # if j==4
+            #     er
+            # end
 
             #L[i,j] = 1/Ld[j]*(A[i,j]-s)
             push!(Lr,i)
             push!(Lv,1/Ld[j]*(A[i,j]-s))
+            LL[i][j] = 1/Ld[j]*(A[i,j]-s)
             #push!(Lv[i],1/Ld[j]*(A[i,j]-s))
         end
         push!(Lc,length(Lr)+1)

@@ -18,7 +18,7 @@ function hand_chol(A)
 end
 
 @time L = hand_chol(A)
-@time cholesky(A)
+@btime cholesky($mA)
 sum(abs, L*L'.-A)
 
 
