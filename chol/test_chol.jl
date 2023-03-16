@@ -24,8 +24,10 @@ sum(abs, L*L'.-A)
 
 @btime hand_cholS($mA);
 @btime hand_chol($mA);
-@time cholesky(mA);
-@profiler hand_cholS(mA);
+@btime cholesky($mA);
+@profiler for i=1:100
+    hand_cholS(mA);
+end
 L, L1 = hand_cholS(mA);
 sum(abs, L*L'.-mA)
 

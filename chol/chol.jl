@@ -41,11 +41,12 @@ function hand_cholS(A)
         #     #s+=v^2
         # end
         #s = 0
-        for k = Lc[1]:Lc[j]-1
-            if Lr[k]==j
-                s+=Lv[k]^2
-            end
-        end
+        # for k = Lc[1]:Lc[j]-1
+        #     if Lr[k]==j
+        #         s+=Lv[k]^2
+        #     end
+        # end
+        s = sum(LL[j][1:j].*LL[j][1:j])
         #s0=sum(Lv[j].^2)
         #println(j," ",s," ",s0)
         for i = A.colptr[j]:A.colptr[j+1]-1
