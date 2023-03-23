@@ -66,6 +66,11 @@ function hand_cholS(A)
         #         L[A.rowval[i],j] = (A.nzval[i]-s0)/L[j,j]
         #     end
         # end
+        for ic = A.colptr[j]:A.colptr[j+1]-1
+            if A.rowval[ic]>j
+                LL[A.rowval[ic]][j] = A.nzval[ic]
+            end
+        end
         for i = j+1:n#A.colptr[j]:A.colptr[j+1]-1
             s = 0.0
             # for k = 1:j-1
@@ -97,8 +102,10 @@ function hand_cholS(A)
 
             #L[i,j] = 1/Ld[j]*(A[i,j]-s)
             push!(Lr,i)
-            push!(Lv,1/Ld[j]*(A[i,j]-s))
-            LL[i][j] = 1/Ld[j]*(A[i,j]-s)
+
+            s1 = LL[i][j]
+            LL[i][j] = 1/Ld[j]*(s1-s)
+            push!(Lv,LL[i][j])
             #push!(Lv[i],1/Ld[j]*(A[i,j]-s))
         end
         push!(Lc,length(Lr)+1)
