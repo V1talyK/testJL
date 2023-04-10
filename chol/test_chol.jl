@@ -1,5 +1,5 @@
 using LinearAlgebra, BenchmarkTools, Profile, SparseArrays
-n = 100
+n = 1000
 A = rand(n,n); A = A.+A'; A = diagm(sum(A,dims=2)[:].+1).-A
 mA = sprand(n,n,0.3); mA = mA.+mA'; mA = diagm(sum(mA,dims=2)[:].+1).-mA
 b = rand(n)
@@ -25,7 +25,7 @@ sum(abs, L*L'.-A)
 @btime hand_cholS($mA);
 @btime hand_chol($mA);
 @btime cholesky($mA);
-@profiler for i=1:100
+@profiler for i=1:1
     hand_cholS(mA);
 end
 L, L1 = hand_cholS(mA);

@@ -12,8 +12,10 @@ function hand_cholS(A)
     Lv2 = zeros(Float64,0)
 
     LL = Vector{Array{Float32,1}}(undef,n)
+    LL2 = Vector{Array{Float32,1}}(undef,n)
     for i=1:n
         LL[i] = zeros(Float32, n)
+        LL2[i] = zeros(Float32, n)
     end
 
     Ld = zeros(n)
@@ -21,10 +23,6 @@ function hand_cholS(A)
     Lr[1] = 1
     push!(Lc,1)
     push!(Lv,sqrt(A.nzval[1]))
-
-    Lr2[1] = 1
-    push!(Lc2,1)
-    push!(Lv2,sqrt(A.nzval[1]))
 
     Ld[1] = sqrt(A.nzval[1])
     kr = 1
@@ -85,6 +83,8 @@ function hand_cholS(A)
             @inbounds for k=1:j-1
                 s+=LL[i][k]*LL[j][k]
             end
+            s=LL2[i][j]+ LL[i][j-1]*LL[j][j-1]
+            LL2[i][j] = s
             kr+=1
             Lr[kr] = i
             #push!(Lr,i)
