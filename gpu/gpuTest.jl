@@ -17,9 +17,10 @@ using CuArrays, CuArrays.CUSPARSE
 using CUDA
 CUDA.versioninfo()
 
-cuA =  CuArrays.CUSPARSE.CuSparseMatrixCSR(A);
-cuB = CuArrays.CuArray(b)
-x = CuArrays.CuArray(zeros(length(b)));
+cuA =  CUDA.CUSPARSE.CuSparseMatrixCSR(A);
+cuB = CUDA.CuArray(b)
+x = CUDA.CuArray(zeros(length(b)));
+x.=cuA\cuB
 
 function kernel_vadd(a, b, c)
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
@@ -58,10 +59,11 @@ xs_cpu = collect(xs)
 @time xs\ys;
 
 x2 = zeros(length(b))
-CuArrays.CUSOLVER.csrlsvlu!(A,b,x2,1e-5,Int32(0),'O')
+tol =1e-5
+CUDA.CUSOLVER.csrlsvlu!(A,b,x2,1e-5,Int32(0),'O')
 CuArrays.CUSOLVER.csrlsvlu!(iluA,A,cuB,x,1e-5,Int32(0),'O')
 
-CuArrays.CUSOLVER.csrlsvchol!(cuA,cuB,x,tol,zero(Cint),'O')
+CUDA.CUSOLVER.csrlsvchol!(cuA,cuB,x,tol,zero(Cint),'O')
 
 CuArrays.CUSOLVER.cusolverSpCreate()
 
