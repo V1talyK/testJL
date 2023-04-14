@@ -2,14 +2,14 @@ using FFTW
 
 function mb(q, Pa)
     nt = length(q)
-    #Pa = 10
+    Pa = 10
     P = zeros(length(q))
     bet = 150
     lam = 1
     dt = 30
     P0 = 10;
     for t=1:nt
-        P[t] = (lam*Pa[t]+bet/dt*P0 - q[t]*0)/(bet/dt+lam)
+        P[t] = (lam*Pa+bet/dt*P0 - q[t])/(bet/dt+lam)
         P0 = P[t]
     end
     return P
@@ -18,7 +18,8 @@ end
 function mb2(q, Pa, omg)
 
     nt = length(q)
-    #Pa = 10
+    Pa = 10
+    P0 = 10
     P = zeros(length(q))
     bet = 150
     lam = 1
@@ -26,7 +27,7 @@ function mb2(q, Pa, omg)
     R2 = -complex(0,1)/(omg*bet/dt)
     R2 = 1/(omg*bet/dt)
     for t=1:nt
-        P[t] = (Pa[t]*lam - q[t]*0)/(1/R2+lam)
+        P[t] = ((Pa-P0)*lam - q[t])/(1/R2+lam)
     end
     return P
 end
@@ -58,7 +59,7 @@ n3 = 3
     for i in 1:N÷n3
         yr .+= ak[i] * cos.(2π*(i-1)/tay * x) .+ bk[i] * sin.(2π*(i-1)/tay * x)
     end
-    plt = lineplot(x, Pa)
+    plt = lineplot(x, q)
     lineplot!(plt, x, yr) |> println
 
 qr = Vector(undef, N÷n3)
@@ -80,6 +81,6 @@ for i=1:10
 end
 
 lineplot(Pr[32].+Pr[33]) |> println
-plt = lineplot(foo(Pr))
+plt = lineplot(foo(Pr).+10)
     lineplot!(plt,P)
     println(plt)
