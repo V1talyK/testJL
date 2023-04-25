@@ -1,6 +1,6 @@
 using UnicodePlots, StatsBase
 include(joinpath(Base.source_path(),"../../mb/mb.jl"))
-
+nt = 100
 q = ones(nt); q[Int32(nt/2):end] .= 0.5
 Paq = 10;
 db = 100
