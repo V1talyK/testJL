@@ -1,5 +1,10 @@
-using UnicodePlots, StatsBase
+using UnicodePlots, StatsBase, Term
 include(joinpath(Base.source_path(),"../../mb/mb.jl"))
+panel(p; kw...) = begin
+  p.margin[] = p.padding[] = 0  # make plots more compact
+  Panel(string(p; color=true); style="hidden", fit=true, kw...)
+end
+
 nt = 100
 q = ones(nt); q[Int32(nt/2):end] .= 0.5
 Paq = 10;
@@ -31,11 +36,13 @@ for t=1:nt
     PP0 = PP[t]
 end
 
-plt = lineplot(P_0,ylim = [7,10])
-    #println(plt)
-    #lineplot!(plt,1:nt, z)
-    lineplot!(plt,1:nt, P)
-    println(plt)
+plt1 = lineplot(P_0,ylim = [7,10], title = "Фильтрованный")
+       lineplot!(plt1,1:nt, P);
+
+plt2 = lineplot(P_0,ylim = [7,10], title = "Исходный")
+       lineplot!(plt2,1:nt, z);
+
+grid(panel.([plt2, plt1]); layout=(1, nothing)) |> print
 
 sum(abs2,z.-P_0)
 sum(abs2,P_0.-P)
