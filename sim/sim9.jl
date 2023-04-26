@@ -12,12 +12,13 @@ function make9p(Tt, Pa, nw, bet)
     AA = sparse(r,c,TT)
     A1 = zeros(nw)
     bi = [1,2,3,4,6,7,8,9]
+    lam = [2,1,2,1,1,2,1,2]
     bb = zeros(nw);
     bb[bi] .= Tt[bi]*Pa
 
     eVp = Ve*bet
     A1 .= sum(AA,dims=2)[:] + eVp;
-    A1[bi] .= A1[bi] .+ Tt[bi]
+    A1[bi] .= A1[bi] .+ Tt[bi].*lam
     for v in 1:nw
         AA[v,v] = -A1[v];
     end
