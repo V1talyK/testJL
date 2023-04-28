@@ -31,13 +31,15 @@ function sim(qw, nt, AA, bb, P0, eVp)
     dP_dp0 = Vector(undef, nt)
     dP_dVp = Vector(undef, nt)
     p0 = copy(P0)
+    dP_dVp0 = zeros(length(eVp),length(eVp))
     for t = 1:nt
         simt!(view(PM,:,t),AA,bb,view(qw,:,t), p0, eVp)
         dP_dp0[t] = zeros(length(eVp),length(eVp))
         dP_dVp[t] = zeros(length(eVp),length(eVp))
         cacl_dP_dp0!(dP_dp0[t],AA,eVp)
-        cacl_dP_dVp!(dP_dVp,AA,view(PM,:,t),p0)
+        cacl_dP_dVp!(dP_dVp[t],AA,view(PM,:,t),p0,eVp,dP_dVp0)
         p0 .= view(PM,:,t)
+        dP_dVp0 .= dP_dVp[t]
     end
     return PM, dP_dp0, dP_dVp
 end
@@ -55,13 +57,13 @@ function cacl_dP_dp0!(dP_dp0,AA,eVp)
     end
 end
 
-function cacl_dP_dVp!(dP_dVp,AA,pt,p0)
+function cacl_dP_dVp!(dP_dVp,AA,pt,p0,eVp,dP_dVp0)
     bb = zeros(length(pt))
     dA_dVp = zeros(length(pt))
     for (k,v) in enumerate(pt)
         bb[k] = - p0[k]
         dA_dVp[k] = 1.0;
-        dP_dVp[:,k] .= AA\(bb .- dA_dVp.*pt)
+        dP_dVp[:,k] .= AA\(bb .- dA_dVp.*pt .- dP_dVp0[:,k].*eVp)
         bb[k] = 0.0;
         dA_dVp[k] = 0.0;
     end
@@ -84,10 +86,29 @@ end
 function plot_P(PM, nw)
     plt = Vector(undef, Int64(ceil(nw/3)))
     for (k,v) in enumerate(Iterators.partition(1:nw,3))
-        plt[k] = lineplot(PM[v[1],:], ylim = [floor(minimum(PM)),ceil(maximum(PM))])
+        plt[k] = lineplot(PM[v[1],:], ylim = [floor(minimum(PM)),ceil(maximum(PM))],
+                name = "скв. $(v[1])", ylabel = "P")
         for i in v[2:end]
-            lineplot!(plt[k], PM[i,:])
+            lineplot!(plt[k], PM[i,:], name = "скв. $i")
         end
     end
+    grid(panel.(plt[1:3]); layout=(1, nothing)) |> print
+end
+
+function plot_P_aft_klm(P0, Pk, Pn, iw)
+    plt = Vector(undef, 3)
+    miP = min(minimum(P0[iw,:]),minimum(Pk[iw,:]),minimum(Pn[iw,:]))
+    maP = max(maximum(P0[iw,:]),maximum(Pk[iw,:]),maximum(Pn[iw,:]))
+    yL =  [floor(miP),ceil(maP)]
+
+    plt[1] = lineplot(P0[iw,:], ylim = yL, name = "факт")
+    lineplot!(plt[1], Pn[iw,:], name = "шум")
+
+    plt[2] = lineplot(P0[iw,:], ylim = yL, name = "факт")
+    lineplot!(plt[2], Pk[iw,:], name = "калман")
+
+    plt[3] = lineplot(Pn[iw,:], ylim = yL, name = "шум")
+    lineplot!(plt[3], Pk[iw,:], name = "калман")
+
     grid(panel.(plt[1:3]); layout=(1, nothing)) |> print
 end

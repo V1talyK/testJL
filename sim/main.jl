@@ -33,12 +33,13 @@ Pk0 = zeros(nw, nw);
 Pk0[1:nw+1:nw*nw].=(2/3)^2
 Qk = [zeros(nw, nw) for _ in 1:nt]
 for t=1:nt
-    Qk[t] .= dP_dVp[t].*dbet
-    Qk[t] .= cov(dP_dVp[1][:,:],dP_dVp[1][:,:]')
+    #Qk[t] .= dP_dVp[t].*dbet
+    #Qk[t] .= cov(dP_dVp[1][:,:],dP_dVp[1][:,:]')
+    Qk[t] .= dP_dVp[t]*diagm(0=>dbet.*ones(9))*dP_dVp[t]'
 end
 
 Hk = diagm(0 => ones(nw))
-zk = PM .+ rand(-0.5:0.1:0.5,nw, nt)
+zk = PM .+ rand(-0.5:0.1:0.5,nw, nt).*2
 sid = mean(abs2,z.-P_0)
 Rk = diagm(0 => sid*10*ones(nw))#(1/3)^2
 I1 = diagm(0 => ones(nw))#(1/3)^2
@@ -67,6 +68,9 @@ end
 
 plot_P(p_sim, nw)
 
+iw = 8
+    plot_P_aft_klm(PM, p_sim, zk, iw)
+
 plt = lineplot(PM[1,:], ylim = [floor(minimum(PM[1,:])), ceil(maximum(PM[1,:]))])
     lineplot!(plt, p_sim[1,:])
     println(plt)
@@ -77,4 +81,4 @@ plt = lineplot(PM[1,:], ylim = [floor(minimum(PM[1,:])), ceil(maximum(PM[1,:]))]
 
 plt = lineplot(p_sim[1,:], ylim = [floor(minimum(PM[1,:])), ceil(maximum(PM[1,:]))])
     lineplot!(plt, zk[1,:])
-    println(plt)    
+    println(plt)
