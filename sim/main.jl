@@ -1,7 +1,6 @@
 using  UnicodePlots, StatsBase, Term, LinearAlgebra
 include(joinpath(Base.source_path(),"../../sim/sim9.jl"))
 
-
 nw, nt  = 9, 100;
 qw = rand(nw,nt)
 qw[1,:] .= 1;  qw[1,50:60] .= 2;

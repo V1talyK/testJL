@@ -8,9 +8,15 @@ function make9p(Tt, Pa, nw, bet)
     r = [1,1,2,2,2,3,3,4,4,4,5,5,5,5,6,6,6,7,7,8,8,8,9,9]
     c = [2,4,1,5,3,2,6,1,5,7,2,6,4,8,3,5,9,4,8,7,5,9,6,8]
     TT = 2 .*Tt[r].*Tt[c]./(Tt[r].+Tt[c])
+    dTr = 2 .*(Tt[c]./(Tt[r].+Tt[c])).^2
+    dTc = 2 .*(Tt[r]./(Tt[r].+Tt[c])).^2
 
-    AA = sparse(r,c,TT)
+    AA = sparse(r, c, TT)
+    #dA = sparse(r, c, dT)
+
     A1 = zeros(nw)
+    dA1 = zeros(nw)
+
     bi = [1,2,3,4,6,7,8,9]
     lam = [2,1,2,1,1,2,1,2]
     bb = zeros(nw);
@@ -19,29 +25,41 @@ function make9p(Tt, Pa, nw, bet)
     eVp = Ve*bet
     A1 .= sum(AA,dims=2)[:] + eVp;
     A1[bi] .= A1[bi] .+ Tt[bi].*lam
-    for v in 1:nw
-        AA[v,v] = -A1[v];
-    end
 
-    return AA, bb, eVp
+    #dA1 .= sum(dA, dims=1)[:];
+    #dA1[bi] .= dA1[bi] .+ lam
+
+    for v in 1:nw
+        AA[v,v] = - A1[v];
+        #dA[v,v] = - dA1[v];
+    end
+    dA = 1
+    return AA, bb, eVp, dTc, dTr, r, c, lam, bi
 end
 
-function sim(qw, nt, AA, bb, P0, eVp)
+function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
     PM = zeros(size(qw))
     dP_dp0 = Vector(undef, nt)
     dP_dVp = Vector(undef, nt)
+    dP_dT = Vector(undef, nt)
     p0 = copy(P0)
     dP_dVp0 = zeros(length(eVp),length(eVp))
+    dP_dT0 = zeros(length(eVp),length(eVp))
     for t = 1:nt
         simt!(view(PM,:,t),AA,bb,view(qw,:,t), p0, eVp)
         dP_dp0[t] = zeros(length(eVp),length(eVp))
         dP_dVp[t] = zeros(length(eVp),length(eVp))
+        dP_dT[t] = zeros(length(eVp),length(eVp))
+
         cacl_dP_dp0!(dP_dp0[t],AA,eVp)
         cacl_dP_dVp!(dP_dVp[t],AA,view(PM,:,t),p0,eVp,dP_dVp0)
+        cacl_dP_dT!(dP_dT[t],AA,view(PM,:,t), p0, eVp, dP_dT0, dTc, dTr, Pa, r, c, lam, bi)
+
         p0 .= view(PM,:,t)
         dP_dVp0 .= dP_dVp[t]
+        dP_dT0 .= dP_dT[t]
     end
-    return PM, dP_dp0, dP_dVp
+    return PM, dP_dp0, dP_dVp, dP_dT
 end
 
 function simt!(Pt,AA,bt,qt, p0, eVp)
@@ -66,6 +84,31 @@ function cacl_dP_dVp!(dP_dVp,AA,pt,p0,eVp,dP_dVp0)
         dP_dVp[:,k] .= AA\(bb .- dA_dVp.*pt .- dP_dVp0[:,k].*eVp)
         bb[k] = 0.0;
         dA_dVp[k] = 0.0;
+    end
+end
+
+function cacl_dP_dT!(dP_dT,AA,pt,p0,eVp,dP_dT0, dTc, dTr, pa, r, c, lam, bi)
+    db_dT = zeros(length(pt))
+    dA_dT = zeros(length(pt))
+    k1=0
+    dP = pt[c] .- pt[r]
+    AS = dTr.*dP# .+ dTr.*dP
+    for (k,v) in enumerate(pt)
+        if k in bi
+            k1+=1
+            db_dT[k] = (pt[k] - pa)*lam[k1]
+        end
+        for i in 1:length(r)
+            if r[i]==k
+                dA_dT[r[i]] += AS[i];
+            end
+            if c[i]==k
+                dA_dT[r[i]] += AS[i];
+            end
+        end
+        dP_dT[:,k] .= AA\(db_dT .- dA_dT.- dP_dT0[:,k].*eVp)
+        db_dT[k] = 0.0;
+        dA_dT[:] .= 0.0;
     end
 end
 
