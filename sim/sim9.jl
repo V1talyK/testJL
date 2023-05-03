@@ -20,9 +20,9 @@ function make9p(Tt, Pa, nw, bet)
     bi = [1,2,3,4,6,7,8,9]
     lam = [2,1,2,1,1,2,1,2]
     bb = zeros(nw);
-    bb[bi] .= Tt[bi]*Pa
+    bb[bi] .= Tt[bi].*Pa.*lam
 
-    eVp = Ve*bet
+    eVp = Ve*bet#/Δt
     A1 .= sum(AA,dims=2)[:] + eVp;
     A1[bi] .= A1[bi] .+ Tt[bi].*lam
 
@@ -90,7 +90,7 @@ end
 function cacl_dP_dT!(dP_dT,AA,pt,p0,eVp,dP_dT0, dTc, dTr, pa, r, c, lam, bi)
     db_dT = zeros(length(pt))
     dA_dT = zeros(length(pt))
-    k1=0
+    k1 = 0
     dP = pt[c] .- pt[r]
     AS = dTr.*dP# .+ dTr.*dP
     for (k,v) in enumerate(pt)
