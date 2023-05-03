@@ -1,15 +1,19 @@
-for iw = 1:3
+for iw = 1:5
     Tt1 = copy(Tt)
 
-    Tt1[iw] = 1.6
-    AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt, Pa, nw, bet*0.1)
+    Tt1[iw] = 1.0
+    AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt, Pa, nw, bet)
     PM0, dP_dp0, dP_dVp, dP_dT = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
 
-    AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt1, Pa, nw, bet*0.1)
+    AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt1, Pa, nw, bet)
     PM1, dP_dp0, dP_dVp, dP_dT1 = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
 
-    for t=1:10
+    for t=1:100
         println(iw," ",t," ",all(sign.(dP_dT[t][:,iw]).==sign.(PM1[:,t] .- PM0[:,t])))
+        if !all(sign.(dP_dT[t][:,iw]).==sign.(PM1[:,t] .- PM0[:,t]))
+            println(dP_dT[t][:,iw])
+            println(PM1[:,t] .- PM0[:,t])
+        end
     end
 end
 
