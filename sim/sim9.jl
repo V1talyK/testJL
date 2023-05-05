@@ -81,7 +81,7 @@ function cacl_dP_dVp!(dP_dVp,AA,pt,p0,eVp,dP_dVp0)
     for (k,v) in enumerate(pt)
         bb[k] = - p0[k]
         dA_dVp[k] = 1.0;
-        dP_dVp[:,k] .= AA\(bb .- dA_dVp.*pt .- dP_dVp0[:,k].*eVp)
+        dP_dVp[:,k] .= AA\(bb .+ dA_dVp.*pt .- dP_dVp0[:,k].*eVp)
         bb[k] = 0.0;
         dA_dVp[k] = 0.0;
     end
