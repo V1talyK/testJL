@@ -14,17 +14,19 @@ qw[8,:] .= 1;   qw[8,75:80] .= 5;
 qw[9,:] .= 1;
 
 Tt = rand(nw)
+Tt = 0.8*ones(nw)
 
 Pa = 10;
 P0 = Pa*ones(nw)
 bet = 1e-4;
 
-AA, bb, eVp = make9p(Tt, Pa, nw, bet)
+AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt, Pa, nw, bet)
 
-PM, dP_dp0, dP_dVp = sim(qw, nt, AA, bb, P0, eVp)
+PM, dP_dp0, dP_dVp, dP_dT = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
 plot_P(PM, nw)
 
 dbet = eVp.*0.5
+dT = Tt.*0.25
 
 #grid(panel.(plt[4:6]); layout=(1, nothing)) |> print
 #grid(panel.(plt[7:9]); layout=(1, nothing)) |> print
@@ -34,21 +36,21 @@ Qk = [zeros(nw, nw) for _ in 1:nt]
 for t=1:nt
     #Qk[t] .= dP_dVp[t].*dbet
     #Qk[t] .= cov(dP_dVp[1][:,:],dP_dVp[1][:,:]')
-    Qk[t] .= dP_dVp[t]*diagm(0=>dbet.*ones(9))*dP_dVp[t]'
+    Qk[t] .= dP_dVp[t]*diagm(0=>dbet.*ones(9))*dP_dVp[t]' .+
+             dP_dT[t]*diagm(0=>dT.*ones(9))*dP_dT[t]'
 end
 
 Hk = diagm(0 => ones(nw))
 zk = PM .+ rand(-0.5:0.1:0.5,nw, nt).*2
-sid = mean(abs2,z.-P_0)
+sid = mean(abs2,zk.-PM)
 Rk = diagm(0 => sid*10*ones(nw))#(1/3)^2
 I1 = diagm(0 => ones(nw))#(1/3)^2
 
-p0 = Paq*ones(nw)
+p0 = Pa*ones(nw)
 p_sim = similar(qw)
 p_kor = similar(qw)
 simt_f = make_simt_f(AA,bb,eVp)
 dPx = dP_dp0
-
 
 
 for t=1:nt
