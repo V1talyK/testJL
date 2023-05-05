@@ -157,27 +157,47 @@ function plot_P_aft_klm(P0, Pk, Pn, iw)
     grid(panel.(plt[1:3]); layout=(1, nothing)) |> print
 end
 
-function pre_adp(T0, V0)
+function pre_adp(T0, V0, PMf; flag_v = true, flag_t = true)
     Tt = copy(T0)
     mV = copy(V0)
-    maxI = 50
+    opT, opV = copy(T0),  copy(V0)
+    maxI = 150
+    JJ_temp = Inf;
     JJ = zeros(maxI)
-    for i=1:50
+    optP = copy(PMf)
+    for i=1:maxI
         AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt, Pa, nw, bet;
                                                 Ve = 250/3*250/3*1*0.14*mV,
                                                 lm = 0.0)
         PM, dP_dp0, dP_dVp, dP_dT = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
 
+        JJ[i] = mean(abs2, PM.-PMf)
+        print(i,"  ",JJ[i])
+
+        if JJ[i]<JJ_temp
+            opT, opV = copy(Tt),  copy(mV)
+            JJ_temp = JJ[i]
+            optP .= PM
+        end
+
         dJ_dT = zeros(nw)
         dJ_dV = zeros(nw)
         for t=1:nt
-            dJ_dT .+= -2*dP_dT[t]'*(ppl2[:,t].-PM[:,t])
-            dJ_dV .+= -2*dP_dVp[t]'*(ppl2[:,t].-PM[:,t])
+            dJ_dT .+= -2*dP_dT[t]'*(PMf[:,t].-PM[:,t])
+            dJ_dV .+= -2*dP_dVp[t]'*(PMf[:,t].-PM[:,t])
         end
+
+        if flag_t
+            Tt .= Tt.*(1.0 .- 0.05.*(dJ_dT./maximum(abs, dJ_dT)))
+        end
+        if flag_v
+            mV .= mV.*(1.0 .- 0.05.*(dJ_dV./maximum(abs, dJ_dV)))
+        end
+
         #Tt .= Tt.*(1.0 .- 0.05.*sign.(dJ_dT))
-        mV .= mV.*(1.0 .- 0.05.*sign.(dJ_dV))
-        JJ[i] = sum(abs2, PM.-ppl2)
-        println(i,"  ",JJ[i])
+        #mV .= mV.*(1.0 .- 0.05.*sign.(dJ_dV))
+        println(" ", round.(dJ_dT, digits = 1))
     end
     lineplot(JJ)
+    return opT, opV, optP
 end
