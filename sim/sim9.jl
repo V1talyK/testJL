@@ -155,3 +155,28 @@ function plot_P_aft_klm(P0, Pk, Pn, iw)
 
     grid(panel.(plt[1:3]); layout=(1, nothing)) |> print
 end
+
+function pre_adp(T0, V0)
+    Tt = copy(T0)
+    mV = copy(V0)
+    maxI = 50
+    JJ = zeros(maxI)
+    for i=1:50
+        AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt, Pa, nw, bet;
+                                                Ve = 250/3*250/3*1*0.14*mV,
+                                                lm = 0.0)
+        PM, dP_dp0, dP_dVp, dP_dT = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
+
+        dJ_dT = zeros(nw)
+        dJ_dV = zeros(nw)
+        for t=1:nt
+            dJ_dT .+= -2*dP_dT[t]'*(ppl2[:,t].-PM[:,t])
+            dJ_dV .+= -2*dP_dVp[t]'*(ppl2[:,t].-PM[:,t])
+        end
+        #Tt .= Tt.*(1.0 .- 0.05.*sign.(dJ_dT))
+        mV .= mV.*(1.0 .- 0.05.*sign.(dJ_dV))
+        JJ[i] = sum(abs2, PM.-ppl2)
+        println(i,"  ",JJ[i])
+    end
+    lineplot(JJ)
+end
