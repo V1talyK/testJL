@@ -1,9 +1,10 @@
 using SparseArrays
 using  UnicodePlots, Term
 
-function make9p(Tt, Pa, nw, bet)
+function make9p(Tt, Pa, nw, bet;
+                Ve = ones(nw)*100*100*10*0.2,
+                lm = 1.0)
     Δt = 30.5;
-    Ve = ones(nw)*100*100*10*0.2
 
     r = [1,1,2,2,2,3,3,4,4,4,5,5,5,5,6,6,6,7,7,8,8,8,9,9]
     c = [2,4,1,5,3,2,6,1,5,7,2,6,4,8,3,5,9,4,8,7,5,9,6,8]
@@ -18,11 +19,11 @@ function make9p(Tt, Pa, nw, bet)
     dA1 = zeros(nw)
 
     bi = [1,2,3,4,6,7,8,9]
-    lam = [2,1,2,1,1,2,1,2]
+    lam = [2,1,2,1,1,2,1,2].*lm
     bb = zeros(nw);
     bb[bi] .= Tt[bi].*Pa.*lam
 
-    eVp = Ve*bet#/Δt
+    eVp = Ve*bet/Δt
     A1 .= sum(AA,dims=2)[:] + eVp;
     A1[bi] .= A1[bi] .+ Tt[bi].*lam
 
@@ -115,7 +116,7 @@ end
 function make_simt_f(AA,bt,eVp)
     x1 = zeros(length(bt))
     function simt_f(x,u)
-        simt!(x1,AA,bt,u, x, eVp)
+        simt!(x1, AA, bt, u, x, eVp)
         return x1
     end
     return simt_f
