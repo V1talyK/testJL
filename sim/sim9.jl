@@ -157,11 +157,12 @@ function plot_P_aft_klm(P0, Pk, Pn, iw)
     grid(panel.(plt[1:3]); layout=(1, nothing)) |> print
 end
 
-function pre_adp(T0, V0, PMf; flag_v = true, flag_t = true)
+function pre_adp(T0, V0, PMf;
+                flag_v = true, flag_t = true, maxI = 150)
     Tt = copy(T0)
     mV = copy(V0)
     opT, opV = copy(T0),  copy(V0)
-    maxI = 150
+    #maxI = 150
     JJ_temp = Inf;
     JJ = zeros(maxI)
     optP = copy(PMf)
@@ -198,6 +199,6 @@ function pre_adp(T0, V0, PMf; flag_v = true, flag_t = true)
         #mV .= mV.*(1.0 .- 0.05.*sign.(dJ_dV))
         println(" ", round.(dJ_dT, digits = 1))
     end
-    lineplot(JJ)
+    lineplot(JJ)|>println
     return opT, opV, optP
 end
