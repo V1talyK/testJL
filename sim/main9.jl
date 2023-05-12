@@ -41,6 +41,9 @@ AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(oT, Pa, nw, bet;
 oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
 sum(abs,oP1.-oP)
 
+calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
+
+
 dbet = eVp.*0.1
     ΔT = Tt0.*0.1
     run_klm(PM, Pa, qw, simt_f,dP_dp0, dP_dVp, dP_dT, dbet, ΔT)
