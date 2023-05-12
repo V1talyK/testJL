@@ -1,4 +1,4 @@
-using UnicodePlots, LinearAlgebra, HypothesisTests, StatsBase
+using UnicodePlots, LinearAlgebra, HypothesisTests, StatsBase, Distributions
 rsrc = dirname(Base.source_path())
 include("$rsrc/mbal_fun.jl")
 
@@ -10,7 +10,8 @@ qi = collect(2.5:0.5:8);  qi[1:6].= 0
 qp = collect(1:12);  qp[1:6].= 4
 dt = 30.5
 a0 = [dt/4,1,0.2]
-pf, dp = sim(pa, qi, qp, p00, a0)
+dP0 = zeros(3)
+pf, dp = sim(pa, qi, qp, p00, a0, dP0)
 pf0 = copy(pf)
 pf = pf.+rand(-10:10,nt)
 pfr = copy(pf)
@@ -20,8 +21,8 @@ pfr[7:12] .= NaN
 J = sum(abs2,pf.-pf0)
 J = lf(pfr,pf0)
 J_MAPE = mean(abs,(pf.-pf0)./pf0)
-plt = lineplot(1:nt,pf0)
-    scatterplot!(plt,pf)
+plt = lineplot(collect(1:nt), Float64.(pf0))
+    scatterplot!(plt, pf)
     println(plt)
 
 
