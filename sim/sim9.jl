@@ -157,7 +157,7 @@ function plot_P_aft_klm(P0, Pk, Pn, iw)
     grid(panel.(plt[1:3]); layout=(1, nothing)) |> print
 end
 
-function pre_adp(T0, V0, PMf;
+function pre_adp(T0, V0, PMf, Pa, bet;
                 flag_v = true, flag_t = true, maxI = 150)
     Tt = copy(T0)
     mV = copy(V0)
@@ -166,6 +166,7 @@ function pre_adp(T0, V0, PMf;
     JJ_temp = Inf;
     JJ = zeros(maxI)
     optP = copy(PMf)
+    P0 = Pa*ones(nw)
     for i=1:maxI
         AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt, Pa, nw, bet;
                                                 Ve = 250/3*250/3*1*0.14*mV,
@@ -186,6 +187,9 @@ function pre_adp(T0, V0, PMf;
         for t=1:nt
             dJ_dT .+= -2*dP_dT[t]'*(PMf[:,t].-PM[:,t])
             dJ_dV .+= -2*dP_dVp[t]'*(PMf[:,t].-PM[:,t])
+        end
+        if all(dJ_dT.==0) & all(dJ_dV.==0)
+            break
         end
 
         if flag_t
