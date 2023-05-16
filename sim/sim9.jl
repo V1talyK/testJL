@@ -12,6 +12,11 @@ function make9p(Tt, Pa, nw, bet;
     dTr = 2 .*(Tt[c]./(Tt[r].+Tt[c])).^2
     dTc = 2 .*(Tt[r]./(Tt[r].+Tt[c])).^2
 
+    d2Tr = -(2 .*Tt[c]).^2 ./(Tt[r].+Tt[c]).^3
+    d2Tc = -(2 .*Tt[r]).^2 ./(Tt[r].+Tt[c]).^3
+
+    d2Trc = 4 .*Tt[c].*Tt[r]./(Tt[r].+Tt[c]).^3
+
     AA = sparse(r, c, TT)
     #dA = sparse(r, c, dT)
 
@@ -35,10 +40,10 @@ function make9p(Tt, Pa, nw, bet;
         #dA[v,v] = - dA1[v];
     end
     dA = 1
-    return AA, bb, eVp, dTc, dTr, r, c, lam, bi
+    return AA, bb, eVp, dTc, dTr, r, c, lam, bi, (d2Tr = d2Tr, d2Tc =d2Tc, d2Trc = d2Trc)
 end
 
-function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
+function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
     PM = zeros(size(qw))
     dP_dp0 = Vector(undef, nt)
     dP_dVp = Vector(undef, nt)
@@ -64,7 +69,7 @@ function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
         cacl_dP_dT!(dP_dT[t],AA,view(PM,:,t), p0, eVp, dP_dT0, dTc, dTr, Pa, r, c, lam, bi)
 
         calc_d2P_dVp2!(d2P_dVp2[t], dP_dVp[t], AA,view(PM,:,t),p0,eVp,dP_dVp0, d2P_dVp20)
-        calc_d2P_dT2!(d2P_dT2[t], dP_dT[t], AA,view(PM,:,t),p0,eVp,dP_dT0, d2P_dT20)
+        calc_d2P_dT2!(d2P_dT2[t], dP_dT[t], AA,view(PM,:,t),p0,eVp,dP_dT0, d2P_dT20, dTc, dTr, d2T)
 
         p0 .= view(PM,:,t)
         dP_dVp0 .= dP_dVp[t]
@@ -157,33 +162,48 @@ function cacl_dP_dT!(dP_dT,AA,pt,p0,eVp,dP_dT0, dTc, dTr, pa, r, c, lam, bi)
     end
 end
 
-function calc_d2P_dT2!(d2P_dT2, dP_dT,AA,pt,p0,eVp,dP_dT0, d2P_dT20)
+function calc_d2P_dT2!(d2P_dT2, dP_dT,AA,pt,p0,eVp,dP_dT0, d2P_dT20, dTc, dTr, d2T)
     bb = zeros(length(pt))
     d2A_dT2 = zeros(length(pt))
     dA_dT = zeros(length(pt))
     dP = pt[c] .- pt[r]
-    AS = dTr.*dP# .+ dTr.*dP
     for k1 = 1:length(pt)
-        #dA_dVp[k1] = 1.0;
+        ASi = d2T.d2Tr.*dP# .+ dTr.*dP
+        ASj = d2T.d2Trc.*dP# .+ dTr.*dP
+        dP1 = dP_dT[c,k] .- dP_dT[r,k]
+        AS1 = dTr.*dP1# .+ dTr.*dP
+
+        dP2 = dP_dT[c,k1] .- dP_dT[r,k1]
+        AS2 = dTc.*dP2# .+ dTr.*dP
+
         for (k,v) in enumerate(pt)
             for i in 1:length(r)
                 if r[i]==k
-                    dA_dT[r[i]] += AS[i];
+                    dA_dT[r[i]] += AS1[i];
+                    if k==k1
+                        d2A_dT2[r[i]] += ASi[i];
+                    else
+                        d2A_dT2[r[i]] += ASj[i];
+                    end
                 end
                 if c[i]==k
-                    dA_dT[r[i]] += AS[i];
+                    dA_dT[r[i]] += AS1[i];
+                    if k==k1
+                        d2A_dT2[r[i]] += ASi[i];
+                    else
+                        d2A_dT2[r[i]] += ASj[i];
+                    end
                 end
             end
             if k==k1
                 bb .= - d2P_dT20[k1][:,k].*eVp
-                bb[k] = bb[k] - d2A_dT2*pt
-                bb[k] = bb[k] - 2 *dA_dT[k]*dP_dT[k,k]
+                bb .= bb .- d2A_dT2
+                bb .= bb .- 2 *dA_dT
             else
-                dA_dT[k1] = 1.0;
                 bb .= - d2P_dVp20[k1][:,k].*eVp
-                bb[k1] = bb[k1] - dP_dVp0[k1,k]
-                bb[k] = bb[k] - dP_dVp0[k,k1]
-                bb[k] = bb[k] - dA_dVp[k]*dP_dVp[k, k1]
+                bb .= bb .- d2A_dT2
+                bb .= bb .- dA_dT
+                bb .= bb .- dA_dT
                 bb[k1] = bb[k1] - dA_dVp[k1]*dP_dVp[k1, k]
             end
 

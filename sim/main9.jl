@@ -41,10 +41,10 @@ mape(ones(nw),oV)
 plot_P(oP, nw)
 
 #Считаем погрешности адаптированных параметров
-AA, bb, eVp, dTc, dTr, r, c, lam, bi = make9p(oT, Pa, nw, bet;
+AA, bb, eVp, dTc, dTr, r, c, lam, bi, d2T = make9p(oT, Pa, nw, bet;
                                             Ve = 250/3*250/3*1*0.14*ones(nw).*oV,
                                             lm = 0.0)
-oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
+oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
 sum(abs,oP1.-oP)
 
 ΔVp = calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
