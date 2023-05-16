@@ -12,17 +12,18 @@ Tt0 = 10. *8.64*1e-3 .*ones(nw)/((1+10)/2)
 Pa = 10;
 P0 = Pa*ones(nw)
 bet = (3.7e-4 + 7.4e-3)/2;
-AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt0, Pa, nw, bet;
+AA, bb, eVp, dTc, dTr, r, c, lam, bi = make9p(Tt0, Pa, nw, bet;
                                             Ve = 250/3*250/3*1*0.14*ones(nw),
                                             lm = 0.0)
 
 #Решаем прямую задачу
-PM, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
+PM, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
 plot_P(PM, nw)
 plot_P(ppl2, nw)
 
 #Считаем погрешности
-ΔPM_V, ΔPM_T = calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0; mV = 0.1, mT = 0.1, print_flag = true)
+ΔV = eVp.*0.1
+ΔPM_V, ΔPM_T = calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0; ΔV = ΔV, mT = 0.1, print_flag = true)
 
 #Натягиваем сову на глобус
 oT, oV, oP = pre_adp(Tt0, 0.5.*ones(nw), PM, Pa, bet;
@@ -31,18 +32,40 @@ oT, oV, oP = pre_adp(Tt0, 0.5.*ones(nw), PM, Pa, bet;
 println.(round.(oV.*eVp, digits=2),"  ",round.(eVp, digits=2))
 println.(round.(oT, digits=3),"  ",Tt0)
 mean(abs2,oP.-PM)
-mean(abs,(oP.-PM)./PM)
+
+lf(PM,oP)
+mape(PM,oP)
+mape(Tt0,oT)
+mape(ones(nw),oV)
+
 plot_P(oP, nw)
 
 #Считаем погрешности адаптированных параметров
-AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(oT, Pa, nw, bet;
+AA, bb, eVp, dTc, dTr, r, c, lam, bi = make9p(oT, Pa, nw, bet;
                                             Ve = 250/3*250/3*1*0.14*ones(nw).*oV,
                                             lm = 0.0)
-oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
+oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
 sum(abs,oP1.-oP)
 
-calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
+ΔVp = calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
 
+#Считаем погрешности
+ΔPM_V, ΔPM_T = calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0; ΔV = ΔVp, mT = 0.1, print_flag = true)
+
+
+#Прямой расчёт с оптимизированными параметрами и проверка погрешности
+AA, bb, eVp, dTc, dTr, r, c, lam, bi = make9p(oT, Pa, nw, bet;
+                                            Ve = 250/3*250/3*1*0.14*ones(nw).*oV,
+                                            lm = 0.0)
+oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
+lf(PM, oP1)
+mape(PM, oP)
+
+iw = 1
+    plt = lineplot(PM[iw,:].-oP[iw,:])
+    lineplot!(plt,ΔPM_V[iw,:])
+    lineplot!(plt,ΔPM_T[iw,:])
+    println(plt)
 
 dbet = eVp.*0.1
     ΔT = Tt0.*0.1

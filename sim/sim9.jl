@@ -43,11 +43,13 @@ function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
     dP_dp0 = Vector(undef, nt)
     dP_dVp = Vector(undef, nt)
     d2P_dVp2 = Vector(undef, nt)
+    d2P_dT2 = Vector(undef, nt)
     dP_dT = Vector(undef, nt)
     p0 = copy(P0)
     dP_dVp0 = zeros(length(eVp),length(eVp))
     dP_dT0 = zeros(length(eVp),length(eVp))
     d2P_dVp20 = [zeros(length(eVp),length(eVp)) for _ in 1:length(eVp)]
+    d2P_dT20 = [zeros(length(eVp),length(eVp)) for _ in 1:length(eVp)]
     for t = 1:nt
         simt!(view(PM,:,t),AA,bb,view(qw,:,t), p0, eVp)
         dP_dp0[t] = zeros(length(eVp),length(eVp))
@@ -55,12 +57,14 @@ function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
         dP_dT[t] = zeros(length(eVp),length(eVp))
 
         d2P_dVp2[t] = [zeros(length(eVp),length(eVp)) for _ in 1:length(eVp)]
+        d2P_dT2[t] = [zeros(length(eVp),length(eVp)) for _ in 1:length(eVp)]
 
         cacl_dP_dp0!(dP_dp0[t],AA,eVp)
         cacl_dP_dVp!(dP_dVp[t],AA,view(PM,:,t),p0,eVp,dP_dVp0)
         cacl_dP_dT!(dP_dT[t],AA,view(PM,:,t), p0, eVp, dP_dT0, dTc, dTr, Pa, r, c, lam, bi)
 
-        calc_d2P_dVp2!(d2P_dVp2[t],dP_dVp[t], AA,view(PM,:,t),p0,eVp,dP_dVp0, d2P_dVp20)
+        calc_d2P_dVp2!(d2P_dVp2[t], dP_dVp[t], AA,view(PM,:,t),p0,eVp,dP_dVp0, d2P_dVp20)
+        calc_d2P_dT2!(d2P_dT2[t], dP_dT[t], AA,view(PM,:,t),p0,eVp,dP_dT0, d2P_dT20)
 
         p0 .= view(PM,:,t)
         dP_dVp0 .= dP_dVp[t]
@@ -70,7 +74,7 @@ function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
         end
     end
 
-    return PM, dP_dp0, dP_dVp, dP_dT, d2P_dVp2
+    return PM, dP_dp0, dP_dVp, dP_dT, d2P_dVp2, d2P_dT2
 end
 
 function simt!(Pt,AA,bt,qt, p0, eVp)
@@ -153,6 +157,46 @@ function cacl_dP_dT!(dP_dT,AA,pt,p0,eVp,dP_dT0, dTc, dTr, pa, r, c, lam, bi)
     end
 end
 
+function calc_d2P_dT2!(d2P_dT2, dP_dT,AA,pt,p0,eVp,dP_dT0, d2P_dT20)
+    bb = zeros(length(pt))
+    d2A_dT2 = zeros(length(pt))
+    dA_dT = zeros(length(pt))
+    dP = pt[c] .- pt[r]
+    AS = dTr.*dP# .+ dTr.*dP
+    for k1 = 1:length(pt)
+        #dA_dVp[k1] = 1.0;
+        for (k,v) in enumerate(pt)
+            for i in 1:length(r)
+                if r[i]==k
+                    dA_dT[r[i]] += AS[i];
+                end
+                if c[i]==k
+                    dA_dT[r[i]] += AS[i];
+                end
+            end
+            if k==k1
+                bb .= - d2P_dT20[k1][:,k].*eVp
+                bb[k] = bb[k] - d2A_dT2*pt
+                bb[k] = bb[k] - 2 *dA_dT[k]*dP_dT[k,k]
+            else
+                dA_dT[k1] = 1.0;
+                bb .= - d2P_dVp20[k1][:,k].*eVp
+                bb[k1] = bb[k1] - dP_dVp0[k1,k]
+                bb[k] = bb[k] - dP_dVp0[k,k1]
+                bb[k] = bb[k] - dA_dVp[k]*dP_dVp[k, k1]
+                bb[k1] = bb[k1] - dA_dVp[k1]*dP_dVp[k1, k]
+            end
+
+            d2P_dVp2[k1][:,k] .= AA\bb
+
+            bb[k] = 0.0;
+            bb[k1] = 0.0;
+            dA_dVp[k] = 0.0;
+            dA_dVp[k1] = 0.0;
+        end
+    end
+end
+
 function make_simt_f(AA,bt,eVp)
     x1 = zeros(length(bt))
     function simt_f(x,u)
@@ -208,10 +252,10 @@ function pre_adp(T0, V0, PMf, Pa, bet;
     optP = copy(PMf)
     P0 = Pa*ones(nw)
     for i=1:maxI
-        AA, bb, eVp, dA, dT, r, c, lam, bi = make9p(Tt, Pa, nw, bet;
+        AA, bb, eVp, dTc, dTr, r, c, lam, bi = make9p(Tt, Pa, nw, bet;
                                                 Ve = 250/3*250/3*1*0.14*mV,
                                                 lm = 0.0)
-        PM, dP_dp0, dP_dVp, dP_dT = sim(qw, nt, AA, bb, P0, eVp, dA, dT, r, c, lam, bi)
+        PM, dP_dp0, dP_dVp, dP_dT = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
 
         JJ[i] = mean(abs2, PM.-PMf)
         print(i,"  ",JJ[i])
@@ -248,17 +292,16 @@ function pre_adp(T0, V0, PMf, Pa, bet;
 end
 
 function calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0;
-                    mV = 0.1, mT = 0.1, print_flag = false)
+                    ΔV = ΔV, mT = 0.1, print_flag = false)
     #Расчёт погрешности далвения при погрешностях параметров
     nw, nt = size(PM)
-    dV = eVp.*mV
     ΔT = Tt0.*mT
 
     ΔPM_T = zeros(nw, nt)
     ΔPM_V = zeros(nw, nt)
     for t=1:nt
-        ΔPM_V[:,t] = sqrt.(sum((dP_dVp[t].*dV').^2,dims = 2)[:])
-        ΔPM_T[:,t] = sqrt.(sum((dP_dT[t].*ΔT').^2,dims = 2)[:])
+        ΔPM_V[:,t] = sqrt.(sum((dP_dVp[t].*ΔV).^2,dims = 2)[:])
+        ΔPM_T[:,t] = sqrt.(sum((dP_dT[t].*ΔT).^2,dims = 2)[:])
     end
     iw = 2
     plt = lineplot(PM[iw,:])
@@ -302,8 +345,35 @@ function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
         dPT[i,:] = getindex.(dP_dVp,i,i)
         #end
     end
-    H0,x0,dJ_dx,d2PT,dPT,p,pf,nt = d2J_dV2,eVp,dJ_dV,d2PT,dP_dVp,PM,PM0,nt
-    ΔVp = calc_Δx(d2J_dV2,eVp,dJ_dV,d2PT,dPT,PM,PM0,nt)
+    #H0,x0,dJ_dx,d2PT,dPT,p,pf,nt = d2J_dV2,eVp,dJ_dV,d2PT,dP_dVp,PM,PM0,nt
+    ΔVp = calc_Δx(d2J_dV2,oV,dJ_dV,d2PT,dPT,PM,PM0,nt)
 
     return ΔVp
 end
+
+
+function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,p,pf,nt)
+    x = H0\(H0*x0.-dJ_dx)
+    d2P_dx2 = d2PT'
+    dH_dp = LinearAlgebra.diagm(0 => -2*sum(d2P_dx2,dims=1)[:])
+    dJx_dp = -2*sum(dPT,dims=2)[:]
+
+    N = count(.!isnan.(pf))
+    Jf = sum(abs2,filter(!isnan,p.-pf))/(N-3)
+
+    dx_dp = H0\(dH_dp*(x0-x)-dJx_dp)
+    Sx = sqrt.(dx_dp.^2 .*Jf)
+    Sxs = Sx./sqrt(nt)
+
+    #tp = ifelse(N==6,2.57,2.2)
+    tp = quantile(TDist(N-1),0.975)
+    Δx = tp*Sxs
+
+    for (k,v) in enumerate(zip(x0,Δx))
+        println("$(round(v[1],digits=3))±$(round(v[2],digits=3))")
+    end
+    return Δx
+end
+
+mape(xf,xc) = mean(abs,filter(!isnan,(xf.-xc)./xf))
+lf(xf,xc) = sum(abs2,filter(!isnan,xf.-xc))
