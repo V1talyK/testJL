@@ -285,10 +285,10 @@ function pre_adp(T0, V0, PMf, Pa, bet;
     optP = copy(PMf)
     P0 = Pa*ones(nw)
     for i=1:maxI
-        AA, bb, eVp, dTc, dTr, r, c, lam, bi = make9p(Tt, Pa, nw, bet;
+        AA, bb, eVp, dTc, dTr, r, c, lam, bi, d2T = make9p(Tt, Pa, nw, bet;
                                                 Ve = 250/3*250/3*1*0.14*mV,
                                                 lm = 0.0)
-        PM, dP_dp0, dP_dVp, dP_dT = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
+        PM, dP_dp0, dP_dVp, dP_dT = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
 
         JJ[i] = mean(abs2, PM.-PMf)
         print(i,"  ",JJ[i])
@@ -357,8 +357,8 @@ function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
     dJ_dT = zeros(nw)
     dJ_dV = zeros(nw)
     for t=1:nt
-        dJ_dT .+= -2*dP_dT[t]'*(PM0[:,t].-PM[:,t])
-        dJ_dV .+= -2*dP_dVp[t]'*(PM0[:,t].-PM[:,t])
+        dJ_dT .+= -2*dP_dT[t]'*(PM[:,t].-PM0[:,t])
+        dJ_dV .+= -2*dP_dVp[t]'*(PM[:,t].-PM0[:,t])
     end
 
     d2J_dV2 = calc_d2J_dV2(nw, dP_dVp, PM, PM0, d2P_dVp2)
@@ -388,16 +388,18 @@ function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
 end
 
 
-function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,p,pf,nt; lbl = "x±Δx")
+function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,pf,p,nt; lbl = "x±Δx")
     x = H0\(H0*x0.-dJ_dx)
+    println(lbl,"  ",round.(x, digits = 5), " ", round.(x0, digits = 5))
     d2P_dx2 = d2PT'
     dH_dp = LinearAlgebra.diagm(0 => -2*sum(d2P_dx2,dims=1)[:])
-    dJx_dp = -2*sum(dPT,dims=2)[:]
+    dJx_dp = 2*sum(dPT,dims=2)[:]
 
     N = count(.!isnan.(pf))
     Jf = sum(abs2,filter(!isnan,p.-pf))/(N-3)
 
     dx_dp = H0\(dH_dp*(x0-x)-dJx_dp)
+    dx_dp = -2*sum(pf.-p)./dJ_dx
     Sx = sqrt.(dx_dp.^2 .*Jf)
     Sxs = Sx./sqrt(nt)
 

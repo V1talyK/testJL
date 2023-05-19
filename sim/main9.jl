@@ -15,12 +15,12 @@ Tt0 = 10. *8.64*1e-3 .*ones(nw)/((1+10)/2)
 Pa = 10;
 P0 = Pa*ones(nw)
 bet = (3.7e-4 + 7.4e-3)/2;
-AA, bb, eVp, dTc, dTr, r, c, lam, bi = make9p(Tt0, Pa, nw, bet;
+AA, bb, eVp, dTc, dTr, r, c, lam, bi, d2T = make9p(Tt0, Pa, nw, bet;
                                             Ve = 250/3*250/3*1*0.14*ones(nw),
                                             lm = 0.0)
 
 #Решаем прямую задачу
-PM, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi)
+PM, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
 plot_P(PM, nw)
 plot_P(ppl2, nw)
 
