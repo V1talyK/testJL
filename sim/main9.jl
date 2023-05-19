@@ -5,6 +5,9 @@ include(joinpath(Base.source_path(),"../../kalman/load_file.jl"));
 
 nw, nt  = 9, 33;
 qw = ql2 .+ qi2
+qw .= mean(qw, dims = 2)
+qw[qw.>0] .= mean(qw[qw.>0])
+qw[qw.<0] .= mean(qw[qw.<0])
 
 Tt0 = rand(nw)
 Tt0 = 10. *8.64*1e-3 .*ones(nw)/((1+10)/2)
@@ -23,10 +26,11 @@ plot_P(ppl2, nw)
 
 #Считаем погрешности
 ΔV = eVp.*0.1
-ΔPM_V, ΔPM_T = calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0; ΔV = ΔV, mT = 0.1, print_flag = true)
+ΔT = Tt0.*0.1
+ΔPM_V, ΔPM_T = calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0; ΔV = ΔV, ΔT = ΔT, print_flag = true)
 
 #Натягиваем сову на глобус
-oT, oV, oP = pre_adp(Tt0, 0.5.*ones(nw), PM, Pa, bet;
+oT, oV, oP = pre_adp(0.9.*Tt0, ones(nw), PM, Pa, bet;
                     flag_v = true, flag_t = true, maxI = 50);
 
 println.(round.(oV.*eVp, digits=2),"  ",round.(eVp, digits=2))
@@ -41,16 +45,18 @@ mape(ones(nw),oV)
 plot_P(oP, nw)
 
 #Считаем погрешности адаптированных параметров
+oT = 0.9.*Tt0
+oV = ones(nw)
 AA, bb, eVp, dTc, dTr, r, c, lam, bi, d2T = make9p(oT, Pa, nw, bet;
                                             Ve = 250/3*250/3*1*0.14*ones(nw).*oV,
                                             lm = 0.0)
-oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
+oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2, d2P_dT2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
 sum(abs,oP1.-oP)
 
-ΔVp = calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
+ΔVp, ΔT = calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
 
 #Считаем погрешности
-ΔPM_V, ΔPM_T = calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0; ΔV = ΔVp, mT = 0.1, print_flag = true)
+ΔPM_V, ΔPM_T = calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0; ΔV = ΔVp, ΔT = ΔT, print_flag = true)
 
 
 #Прямой расчёт с оптимизированными параметрами и проверка погрешности

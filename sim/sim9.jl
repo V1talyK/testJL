@@ -76,6 +76,7 @@ function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
         dP_dT0 .= dP_dT[t]
         for i in 1:length(eVp)
             d2P_dVp20[i] .= d2P_dVp2[t][i]
+            d2P_dT20[i] .= d2P_dT2[t][i]
         end
     end
 
@@ -149,45 +150,55 @@ function cacl_dP_dT!(dP_dT,AA,pt,p0,eVp,dP_dT0, dTc, dTr, pa, r, c, lam, bi)
             db_dT[k] = (pt[k] - pa)*lam[k1]
         end
         for i in 1:length(r)
-            if r[i]==k
+            if (r[i]==k) | (c[i]==k)
                 dA_dT[r[i]] += AS[i];
+                # if k in [1,3]
+                #     println(k," $i, $(r[i]), $(c[i]), ", dA_dT, dP[i])
+                # end
             end
-            if c[i]==k
-                dA_dT[r[i]] += AS[i];
-            end
+            # if c[i]==k
+            #     dA_dT[r[i]] += AS[i];
+            # end
+
         end
+        #println()
         dP_dT[:,k] .= AA\(db_dT .- dA_dT.- dP_dT0[:,k].*eVp)
+        if k in [1,3]
+            #println(k," ",db_dT," ",dA_dT," ",dP_dT0[:,k].*eVp)
+        end
         db_dT[k] = 0.0;
         dA_dT[:] .= 0.0;
     end
+    # mapslices(println, round.(dP_dT, digits = 2), dims=1)
+    # wer
 end
 
 function calc_d2P_dT2!(d2P_dT2, dP_dT,AA,pt,p0,eVp,dP_dT0, d2P_dT20, dTc, dTr, d2T)
     bb = zeros(length(pt))
     d2A_dT2 = zeros(length(pt))
-    dA_dT = zeros(length(pt))
+
+    dA_dTii = zeros(length(pt))
+    dA_dTij = zeros(length(pt))
+    dA_dTji = zeros(length(pt))
+
     dP = pt[c] .- pt[r]
     for k1 = 1:length(pt)
         ASi = d2T.d2Tr.*dP# .+ dTr.*dP
         ASj = d2T.d2Trc.*dP# .+ dTr.*dP
-        dP1 = dP_dT[c,k] .- dP_dT[r,k]
-        AS1 = dTr.*dP1# .+ dTr.*dP
-
-        dP2 = dP_dT[c,k1] .- dP_dT[r,k1]
-        AS2 = dTc.*dP2# .+ dTr.*dP
+        dPj = dP_dT[c,k1] .- dP_dT[r,k1]
 
         for (k,v) in enumerate(pt)
+            dPi = dP_dT[c,k] .- dP_dT[r,k]
+
+            ASr = dTr.*dPi
+            ASc = dTr.*dPj
+            AS2 = dTc.*dPi
+
             for i in 1:length(r)
-                if r[i]==k
-                    dA_dT[r[i]] += AS1[i];
-                    if k==k1
-                        d2A_dT2[r[i]] += ASi[i];
-                    else
-                        d2A_dT2[r[i]] += ASj[i];
-                    end
-                end
-                if c[i]==k
-                    dA_dT[r[i]] += AS1[i];
+                if (r[i]==k) | (c[i]==k)
+                    dA_dTii[r[i]] += ASr[i];
+                    dA_dTij[r[i]] += ASc[i];
+                    dA_dTji[r[i]] += AS2[i];
                     if k==k1
                         d2A_dT2[r[i]] += ASi[i];
                     else
@@ -195,24 +206,26 @@ function calc_d2P_dT2!(d2P_dT2, dP_dT,AA,pt,p0,eVp,dP_dT0, d2P_dT20, dTc, dTr, d
                     end
                 end
             end
+
+            bb .= - d2P_dT20[k1][:,k].*eVp
             if k==k1
-                bb .= - d2P_dT20[k1][:,k].*eVp
                 bb .= bb .- d2A_dT2
-                bb .= bb .- 2 *dA_dT
+                bb .= bb .- 2 *dA_dTii
             else
-                bb .= - d2P_dVp20[k1][:,k].*eVp
                 bb .= bb .- d2A_dT2
-                bb .= bb .- dA_dT
-                bb .= bb .- dA_dT
-                bb[k1] = bb[k1] - dA_dVp[k1]*dP_dVp[k1, k]
+                bb .= bb .- dA_dTij
+                bb .= bb .- dA_dTji
+                #bb[k1] = bb[k1] - dA_dVp[k1]*dP_dVp[k1, k]
             end
 
-            d2P_dVp2[k1][:,k] .= AA\bb
+            d2P_dT2[k1][:,k] .= AA\bb
 
-            bb[k] = 0.0;
-            bb[k1] = 0.0;
-            dA_dVp[k] = 0.0;
-            dA_dVp[k1] = 0.0;
+            bb .= 0.0;
+            #bb[k1] = 0.0;
+            dA_dTii .= 0.0;
+            dA_dTji .= 0.0;
+            dA_dTij .= 0.0;
+            d2A_dT2 .= 0.0
         end
     end
 end
@@ -312,10 +325,10 @@ function pre_adp(T0, V0, PMf, Pa, bet;
 end
 
 function calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0;
-                    ΔV = ΔV, mT = 0.1, print_flag = false)
+                    ΔV = ΔV, ΔT = 0.1, print_flag = false)
     #Расчёт погрешности далвения при погрешностях параметров
     nw, nt = size(PM)
-    ΔT = Tt0.*mT
+    #ΔT = Tt0.*mT
 
     ΔPM_T = zeros(nw, nt)
     ΔPM_V = zeros(nw, nt)
@@ -328,10 +341,15 @@ function calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0;
     lineplot!(plt, PM[iw,:] .- ΔPM_V[iw,:])
     lineplot!(plt, PM[iw,:] .+ ΔPM_V[iw,:])
     println(plt)
+
+    plt = lineplot(PM[iw,:])
+    lineplot!(plt, PM[iw,:] .- ΔPM_T[iw,:])
+    lineplot!(plt, PM[iw,:] .+ ΔPM_T[iw,:])
+    println(plt)
     return ΔPM_V, ΔPM_T
 end
 
-function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
+function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
     nw, nt = size(PM)
     PM0 = copy(oP);#PM0 = PM.*1.05
     JJ = sum(abs2, PM .- PM0)
@@ -343,19 +361,8 @@ function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
         dJ_dV .+= -2*dP_dVp[t]'*(PM0[:,t].-PM[:,t])
     end
 
-    d2J_dV2 = zeros(nw, nw)
-    for i = 1:nw
-        for j = 1:nw
-            d2J_dV2[i,j] = 0.0
-            for t=1:nt
-                if i==j
-                    d2J_dV2[i,j] += -2*(-dP_dVp[t][i,j]*dP_dVp[t][i,j] + (PM[:,t].-PM0[:,t])'*d2P_dVp2[t][i][:,i])
-                else
-                    d2J_dV2[i,j] += -2*(-dP_dVp[t][j,i]*dP_dVp[t][i,j] + (PM[:,t].-PM0[:,t])'*d2P_dVp2[t][j][:,i])
-                end
-            end
-        end
-    end
+    d2J_dV2 = calc_d2J_dV2(nw, dP_dVp, PM, PM0, d2P_dVp2)
+    d2J_dT2 = calc_d2J_dV2(nw, dP_dT, PM, PM0, d2P_dT2)
 
     dPT = zeros(nw, nt)
     d2PT = zeros(nw, nt)
@@ -366,13 +373,22 @@ function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dVp2)
         #end
     end
     #H0,x0,dJ_dx,d2PT,dPT,p,pf,nt = d2J_dV2,eVp,dJ_dV,d2PT,dP_dVp,PM,PM0,nt
-    ΔVp = calc_Δx(d2J_dV2,oV,dJ_dV,d2PT,dPT,PM,PM0,nt)
+    ΔVp = calc_Δx(d2J_dV2,oV,dJ_dV,d2PT,dPT,PM,PM0,nt; lbl = "V±ΔV")
 
-    return ΔVp
+    for i = 1:nw
+        #for j = 1:nw
+        d2PT[i,:] = getindex.(getindex.(d2P_dT2,i),i,i)
+        dPT[i,:] = getindex.(dP_dT,i,i)
+        #end
+    end
+    println(dJ_dT)
+    ΔT = calc_Δx(d2J_dT2,oT,dJ_dT,d2PT,dPT,PM,PM0,nt; lbl = "T±ΔT")
+
+    return ΔVp, ΔT
 end
 
 
-function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,p,pf,nt)
+function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,p,pf,nt; lbl = "x±Δx")
     x = H0\(H0*x0.-dJ_dx)
     d2P_dx2 = d2PT'
     dH_dp = LinearAlgebra.diagm(0 => -2*sum(d2P_dx2,dims=1)[:])
@@ -389,11 +405,29 @@ function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,p,pf,nt)
     tp = quantile(TDist(N-1),0.975)
     Δx = tp*Sxs
 
+    println(lbl)
     for (k,v) in enumerate(zip(x0,Δx))
-        println("$(round(v[1],digits=3))±$(round(v[2],digits=3))")
+        println("$(round(v[1],digits=3))±$(round(v[2],digits=3)), $(round(v[2]/v[1]*100,digits=2))%")
     end
     return Δx
 end
 
 mape(xf,xc) = mean(abs,filter(!isnan,(xf.-xc)./xf))
 lf(xf,xc) = sum(abs2,filter(!isnan,xf.-xc))
+
+function calc_d2J_dV2(nw, dP_dVp, PM, PM0,d2P_dVp2)
+    d2J_dV2 = zeros(nw, nw)
+    for i = 1:nw
+        for j = 1:nw
+            d2J_dV2[i,j] = 0.0
+            for t=1:nt
+                if i==j
+                    d2J_dV2[i,j] += -2*(-dP_dVp[t][i,j]*dP_dVp[t][i,j] + (PM[:,t].-PM0[:,t])'*d2P_dVp2[t][i][:,i])
+                else
+                    d2J_dV2[i,j] += -2*(-dP_dVp[t][j,i]*dP_dVp[t][i,j] + (PM[:,t].-PM0[:,t])'*d2P_dVp2[t][j][:,i])
+                end
+            end
+        end
+    end
+    return d2J_dV2
+end
