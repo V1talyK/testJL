@@ -400,6 +400,7 @@ function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,pf,p,nt; lbl = "x±Δx")
 
     dx_dp = H0\(dH_dp*(x0-x)-dJx_dp)
     dx_dp = -2*sum(pf.-p)./dJ_dx
+    #dx_dp = -dPT./(- dPT.*dPT + (pf - p)*d2P_dx2)
     Sx = sqrt.(dx_dp.^2 .*Jf)
     Sxs = Sx./sqrt(nt)
 
