@@ -45,7 +45,8 @@ mape(ones(nw),oV)
 plot_P(oP, nw)
 
 #Считаем погрешности адаптированных параметров
-oT = 0.9.*Tt0
+oT = 1.2.*Tt0
+#oT = copy(Tt0); oT[1] = 0.9*oT[1];
 oV = ones(nw)
 AA, bb, eVp, dTc, dTr, r, c, lam, bi, d2T = make9p(oT, Pa, nw, bet;
                                             Ve = 250/3*250/3*1*0.14*ones(nw).*oV,
@@ -53,7 +54,7 @@ AA, bb, eVp, dTc, dTr, r, c, lam, bi, d2T = make9p(oT, Pa, nw, bet;
 oP1, dP_dp0, dP_dVp, dP_dT, d2P_dVp2, d2P_dT2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
 sum(abs,oP1.-oP)
 
-ΔVp, ΔT = calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
+ΔVp, ΔT = calc_Δprm(PM, oP1, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
 
 #Считаем погрешности
 ΔPM_V, ΔPM_T = calc_ΔPM(dP_dVp, dP_dT, eVp, Tt0; ΔV = ΔVp, ΔT = ΔT, print_flag = true)
@@ -92,35 +93,3 @@ plt = lineplot(PM[1,:], ylim = [floor(minimum(PM[1,:])), ceil(maximum(PM[1,:]))]
 plt = lineplot(p_sim[1,:], ylim = [floor(minimum(PM[1,:])), ceil(maximum(PM[1,:]))])
     lineplot!(plt, zk[1,:])
     println(plt)
-
-du_dp = zeros(nw,length(PM))
-inx = collect(Iterators.product(1:nw,1:nt))[:]
-LI = LinearIndices((1:nw,1:nt))
-for iw = 1:nw
-    for iw2 = 1:nw
-        for t = 1:nt
-            ip = LI[iw2, t]
-            z1 = 0.0
-            z2 = 0.0
-            for t1 = 1:nt
-                for ii = 1:nw
-                    for jj = 1:nw
-                        z1 += dP_dT[t1][ii,iw]*dP_dT[t1][ii,jj]
-                        z2 += (PM[ii,t1].-oP1[ii,t1])*d2P_dT2[t1][jj][ii,iw]
-                    end
-                end
-            end
-            du_dp[iw, ip] = sum(dP_dT[t][iw2,:])/(-z1 - z2)
-        end
-    end
-end
-
-N = count(.!isnan.(PM))
-Jf = sum(abs2,filter(!isnan,PM.-oP1))/(N-nw)
-
-Sx = sqrt.(sum(du_dp.^2, dims=2)[:])
-Sxs = sqrt(Jf).*Sx
-
-#tp = ifelse(N==6,2.57,2.2)
-tp = quantile(TDist(N-9),0.975)
-Δx = tp*Sxs

@@ -364,31 +364,54 @@ function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
     d2J_dV2 = calc_d2J_dV2(nw, dP_dVp, PM, PM0, d2P_dVp2)
     d2J_dT2 = calc_d2J_dV2(nw, dP_dT, PM, PM0, d2P_dT2)
 
-    dPT = zeros(nw, nt)
-    d2PT = zeros(nw, nt)
-    for i = 1:nw
-        #for j = 1:nw
-        d2PT[i,:] = getindex.(getindex.(d2P_dVp2,i),i,i)
-        dPT[i,:] = getindex.(dP_dVp,i,i)
-        #end
-    end
-    #H0,x0,dJ_dx,d2PT,dPT,p,pf,nt = d2J_dV2,eVp,dJ_dV,d2PT,dP_dVp,PM,PM0,nt
-    ΔVp = calc_Δx(d2J_dV2,oV,dJ_dV,d2PT,dPT,PM,PM0,nt; lbl = "V±ΔV")
-
-    for i = 1:nw
-        #for j = 1:nw
-        d2PT[i,:] = getindex.(getindex.(d2P_dT2,i),i,i)
-        dPT[i,:] = getindex.(dP_dT,i,i)
-        #end
-    end
-    println(dJ_dT)
-    ΔT = calc_Δx(d2J_dT2,oT,dJ_dT,d2PT,dPT,PM,PM0,nt; lbl = "T±ΔT")
+    #ΔVp = calc_Δx(d2J_dV2,oV,dJ_dV,d2P_dVp2,dP_dVp,PM,PM0,nt; lbl = "V±ΔV")
+    ΔT = calc_Δx(d2J_dT2,oT,dJ_dT,d2P_dT2,dP_dT,PM,PM0,nt; lbl = "T±ΔT")
 
     return ΔVp, ΔT
 end
 
+function calc_Δx(H0,x0,dJ_dx,d2P_dU2,dP_dU,Pf,Pc,nt; lbl = "x±Δx")
+    nw, nt = size(Pf)
+    du_dp = zeros(nw,length(Pf))
+    inx = collect(Iterators.product(1:nw,1:nt))[:]
+    LI = LinearIndices((1:nw,1:nt))
+    for iw = 1:nw
+        for iw2 = 1:nw
+            for t = 1:nt
+                ip = LI[iw2, t]
+                z1 = 0.0
+                z2 = 0.0
+                for t1 = 1:nt
+                    for ii = 1:nw
+                        for jj = 1:nw
+                            z1 += dP_dU[t1][ii,iw]*dP_dU[t1][ii,jj]
+                            z2 += (Pf[ii,t1].-Pc[ii,t1])*d2P_dU2[t1][jj][ii,iw]
+                        end
+                    end
+                end
+                du_dp[iw, ip] = sum(dP_dU[t][iw2,:])/(-z1 - z2)
+            end
+        end
+    end
 
-function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,pf,p,nt; lbl = "x±Δx")
+    N = count(.!isnan.(Pf))
+    Jf = sum(abs2,filter(!isnan,Pf.-Pc))/(N-nw)
+
+    Sx = sqrt.(sum(du_dp.^2, dims=2)[:])
+    Sxs = sqrt(Jf).*Sx
+
+    #tp = ifelse(N==6,2.57,2.2)
+    tp = quantile(TDist(N-9),0.975)
+    Δx = tp*Sxs
+
+    println(lbl)
+    for (k,v) in enumerate(zip(x0,Δx))
+        println("$(round(v[1],digits=3))±$(round(v[2],digits=3)), $(round(v[2]/v[1]*100,digits=2))%")
+    end
+    return Δx
+end
+
+function _calc_Δx(H0,x0,dJ_dx,d2PT,dPT,pf,p,nt; lbl = "x±Δx")
     x = H0\(H0*x0.-dJ_dx)
     println(lbl,"  ",round.(x, digits = 5), " ", round.(x0, digits = 5))
     d2P_dx2 = d2PT'
