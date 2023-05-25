@@ -375,6 +375,8 @@ function calc_Δx(H0,x0,dJ_dx,d2P_dU2,dP_dU,Pf,Pc,nt; lbl = "x±Δx")
     du_dp = zeros(nw,length(Pf))
     inx = collect(Iterators.product(1:nw,1:nt))[:]
     LI = LinearIndices((1:nw,1:nt))
+
+    Jf = sum(abs2,filter(!isnan,Pf.-Pc))/(N-nw)
     for iw = 1:nw
         for iw2 = 1:nw
             for t = 1:nt
@@ -395,7 +397,6 @@ function calc_Δx(H0,x0,dJ_dx,d2P_dU2,dP_dU,Pf,Pc,nt; lbl = "x±Δx")
     end
 
     N = count(.!isnan.(Pf))
-    Jf = sum(abs2,filter(!isnan,Pf.-Pc))/(N-nw)
 
     Sx = sqrt.(sum(du_dp.^2, dims=2)[:])
     Sxs = sqrt(Jf).*Sx
@@ -406,7 +407,7 @@ function calc_Δx(H0,x0,dJ_dx,d2P_dU2,dP_dU,Pf,Pc,nt; lbl = "x±Δx")
 
     println(lbl)
     for (k,v) in enumerate(zip(x0,Δx))
-        println("$(round(v[1],digits=3))±$(round(v[2],digits=3)), $(round(v[2]/v[1]*100,digits=2))%")
+        println("$k: $(round(v[1],digits=3))±$(round(v[2],digits=3)), $(round(v[2]/v[1]*100,digits=2))%")
     end
     return Δx
 end
