@@ -94,3 +94,16 @@ plt = lineplot(PM[1,:], ylim = [floor(minimum(PM[1,:])), ceil(maximum(PM[1,:]))]
 plt = lineplot(p_sim[1,:], ylim = [floor(minimum(PM[1,:])), ceil(maximum(PM[1,:]))])
     lineplot!(plt, zk[1,:])
     println(plt)
+
+iw = 2
+    scatterplot(mean(oP[iw,:]) .- oP[iw,:], mean(oP[5,:]) .- oP[5,:]) |> println
+
+cor(oP[iw,:],oP[5,:])
+
+d1 = mean(oP[iw,:]) .- oP[iw,:]
+d2 = mean(oP[5,:]) .- oP[5,:]
+a1= sum(d1.*d2)/32
+a2 = sqrt(sum(abs2,d1)/32)*sqrt(sum(abs2,d2)/32)
+a1/a2
+
+cov(oP[iw,:],oP[5,:])/a2

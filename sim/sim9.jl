@@ -363,8 +363,31 @@ function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
 
     d2J_dV2 = calc_d2J_dV2(nw, dP_dVp, PM, PM0, d2P_dVp2)
     d2J_dT2 = calc_d2J_dV2(nw, dP_dT, PM, PM0, d2P_dT2)
-
+    println("d2J_dT2: ",d2J_dT2)
+    Cx = inv(d2J_dT2)
+    println("d2J_dT2: ",size(Cx))
+    AA = vcat(dP_dT...)
+    Cy = AA*Cx*AA'
+    println("Cy: ",size(Cy))
+    println("Cy: ",round.(Cy[1:298:end], digits=2))
+    JJ = 0.0
+    for i=1:297
+        for j = 1:297
+            JJ+=Cy[i,j]*(PM[i] - PM0[i])*(PM[j] - PM0[j])
+        end
+    end
+    Sp = mean(abs2, PM.-PM0,dims=2)[:]
+    cP = cor(PM.-PM0,dims=2)
+    JJ1 = 0.0
+    for i = 1:9
+        for j = 1:9
+            JJ1+=cP[i,j]*Sp[i]*Sp[j]
+        end
+    end
+    println("JJ=",JJ)
+    println("JJ1=",JJ1)
     #ΔVp = calc_Δx(d2J_dV2,oV,dJ_dV,d2P_dVp2,dP_dVp,PM,PM0,nt; lbl = "V±ΔV")
+    ΔVp = 1.0
     ΔT = calc_Δx(d2J_dT2,oT,dJ_dT,d2P_dT2,dP_dT,PM,PM0,nt; lbl = "T±ΔT")
 
     return ΔVp, ΔT
@@ -372,11 +395,24 @@ end
 
 function calc_Δx(H0,x0,dJ_dx,d2P_dU2,dP_dU,Pf,Pc,nt; lbl = "x±Δx")
     nw, nt = size(Pf)
+    N = count(.!isnan.(Pf.-Pc))
     du_dp = zeros(nw,length(Pf))
     inx = collect(Iterators.product(1:nw,1:nt))[:]
     LI = LinearIndices((1:nw,1:nt))
 
     Jf = sum(abs2,filter(!isnan,Pf.-Pc))/(N-nw)
+
+    Sp = sqrt.(sum(abs2, Pf.-Pc, dims=2)[:]./(33-nw))
+    cP = cor(Pf.-Pc, dims=2)
+    JJ1 = 0.0
+    for i = 1:9
+        for j = 1:9
+            JJ1+=cP[i,j]*Sp[i]*Sp[j]
+        end
+    end
+    println("JJ1=",JJ1)
+    println("Jf=",Jf)
+    Jf = JJ1
     for iw = 1:nw
         for iw2 = 1:nw
             for t = 1:nt
@@ -400,6 +436,9 @@ function calc_Δx(H0,x0,dJ_dx,d2P_dU2,dP_dU,Pf,Pc,nt; lbl = "x±Δx")
 
     Sx = sqrt.(sum(du_dp.^2, dims=2)[:])
     Sxs = sqrt(Jf).*Sx
+    Sxs2 = 1
+    dP = Pf[:].-Pc[:]
+    #Sxs = sqrt.(sum((du_dp.*dP').^2, dims=2)[:])
 
     #tp = ifelse(N==6,2.57,2.2)
     tp = quantile(TDist(N-9),0.975)
