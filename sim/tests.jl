@@ -7,8 +7,8 @@ function test_1()
     PM, dP_dp0, dP_dVp, dP_dT, d2P_dVp2 = sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
 
     mn = ones(Float64, 9);
-    mn[1:2:end] .= 1.1
-    mn[2:2:end] .= 0.9
+    mn[1:5] .= 1.1
+    mn[6:end] .= 0.9
     oT = mn.*Tt0
     #oT = copy(Tt0); oT[1] = 0.9*oT[1];
     oV = ones(nw)

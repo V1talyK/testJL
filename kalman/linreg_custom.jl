@@ -23,58 +23,48 @@ BB = x'*y1
 
 AA\BB
 
-yy1, aa = mnk_step1(qw, PM)
+iw = 1
+yy2, aa = two_step(qw, PM) #Прокси
+yy2, aa = two_step(qw, ppl2) #Полноценная
 
-mean(abs2,PM.-yy1)
-
-
-function mnk_step1(xx, yy)
-    nn = size(xx,1)
-    xx = vcat(xx,ones(1,size(xx,2)))
-    AA = xx*xx'
-    aa = zeros(nn+1,nn)
-    for i=1:nn
-        BB = xx*yy[i,:]
-        aa[:,i] = AA\BB
-    end
-    yyr = aa'*xx
-    return yyr, aa
-end
-
-
-function mnk_step2(xx, yy1, yy, aa)
-    nn = size(yy1,1)
-    xx = vcat(xx,ones(1,size(xx,2)))
-    bb = zeros(nn-1,nn)
-    yyr = similar(yy)
-    for i = 1:nn
-        PT = copy(yy1)
-        PT = PT[1:end .!=i,:]
-        #PT[i,:] .= 1.0
-        AA = PT*PT'
-        BB = PT*(yy[i,:].-(aa[:,i]'*xx)')
-        bb[:,i] = AA\BB
-
-        yyr[i,:] = bb[:,i]'*PT + aa[:,i]'*xx
-    end
-    return yyr
-end
-
-yy2 = mnk_step2(qw, yy1, PM, aa)
 plt = lineplot(yy2[iw,:])
-    lineplot!(plt,PM[iw,:])
+    lineplot!(plt,ppl2[iw,:])
     println(plt)
 
-mean(abs2, PM.-yy1, dims=2)
-mean(abs2,PM.-yy2, dims = 2)
+plot_P_lr(ppl2, yy2, 9)
 
-V = cov(PM.-yy2, dims = 2)
+mean(abs2, PM.-yy1, dims=2)
+mean(abs2, PM.-yy2, dims = 2)
+
+mnk_step3(qw, yy2, ppl2, aa)
+
+V = cov(ppl2.-yy2, dims = 2)
+cov(ppl2[1,:].-yy2[1,:])
+cov(ppl2[2,:].-yy2[2,:])
+e1 = ppl2[1,:].-yy2[1,:]
+e2 = ppl2[2,:].-yy2[2,:]
+e1'*e2/33
+ee = ppl2.-yy2
+
+V = ee*ee'./33
 W = inv(V)
 
-qw1 = vcat(qw,ones(1,size(qw,2)))
-bb = (qw*qw'*W)\(PM*qw'*W)
-yy3 = bb*qw
+X1 = copy(hcat(qw',ones(33)))
+X1 = hcat(X1,zeros(33,10*8))
+for i = 2:9
+    tmp = hcat(zeros(33,10*(i-1)),hcat(qw',ones(33)),zeros(33,10*(9-i)))
+    X1 = vcat(X1, tmp)
+end
+
+VV = kron(V,diagm(0=>ones(33)))
+bsur = (X1'*inv(VV)*X1)\(X1'*inv(VV)*ppl2'[:])
+
+X1*bsur
+mape(ppl2'[:],yy2'[:])
+mape(ppl2'[:],X1*bsur)
+
 mean(abs2,PM.-(yy2.+yy3), dims = 2)
+
 iw = 2
     plt = lineplot(0*yy2[iw,:].+yy3[iw,:])
     lineplot!(plt,PM[iw,:])
@@ -85,18 +75,3 @@ iw = 2
         lineplot!(plt,PM[iw,:])
         println(plt)
     end
-
-plot_P_lr(PM, yy1, 9)
-
-function plot_P_lr(PM, P_lr, nw)
-    plt = Vector(undef, Int64(ceil(nw)))
-    for (k,v) in enumerate(1:nw)
-
-        plt[v] = lineplot(PM[v,:], ylim = [floor(minimum(PM)),ceil(maximum(PM))],
-                name = "fact", ylabel = "P", title = "скв. $(v)")
-        #for i in v[2:end]
-            lineplot!(plt[k], P_lr[v,:], name = "calc")
-        #end
-    end
-    grid(panel.(plt); layout=(3, nothing)) |> print
-end

@@ -5,9 +5,9 @@ include(joinpath(Base.source_path(),"../../kalman/load_file.jl"));
 
 nw, nt  = 9, 33;
 qw = ql2 .+ qi2
-qw .= mean(qw, dims = 2)
-qw[qw.>0] .= mean(qw[qw.>0])
-qw[qw.<0] .= mean(qw[qw.<0])
+#qw .= mean(qw, dims = 2)
+#qw[qw.>0] .= mean(qw[qw.>0])
+#qw[qw.<0] .= mean(qw[qw.<0])
 
 Tt0 = rand(nw)
 Tt0 = 10. *8.64*1e-3 .*ones(nw)/((1+10)/2)
