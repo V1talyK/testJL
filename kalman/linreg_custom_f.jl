@@ -8,11 +8,12 @@ function two_step(qw, Pf)
 end
 
 function mnk_step1(xx, yy)
-    nn = size(xx,1)
+    nn1 = size(xx,1)
+    nn2 = size(yy,1)
     xx = vcat(xx,ones(1,size(xx,2)))
     AA = xx*xx'
-    aa = zeros(nn+1,nn)
-    for i=1:nn
+    aa = zeros(nn1+1,nn2)
+    for i=1:nn2
         BB = xx*yy[i,:]
         aa[:,i] = AA\BB
     end
@@ -20,21 +21,20 @@ function mnk_step1(xx, yy)
     return yyr, aa
 end
 
-
 function mnk_step2(xx, yy1, yy, aa)
     nn = size(yy1,1)
     xx = vcat(xx,ones(1,size(xx,2)))
-    bb = zeros(nn-1,nn)
+    bb = zeros(nn-1+nn+1,nn)
     yyr = similar(yy)
     for i = 1:nn
         PT = copy(yy1)
         PT = PT[1:end .!=i,:]
-        #PT[i,:] .= 1.0
+        PT = vcat(PT,xx)
         AA = PT*PT'
-        BB = PT*(yy[i,:].-(aa[:,i]'*xx)')
+        BB = PT*yy[i,:]
         bb[:,i] = AA\BB
 
-        yyr[i,:] = bb[:,i]'*PT + aa[:,i]'*xx
+        yyr[i,:] = bb[:,i]'*PT #+ aa[:,i]'*xx
     end
     return yyr
 end
@@ -68,6 +68,21 @@ function plot_P_lr(PM, P_lr, nw)
                 name = "fact", ylabel = "P", title = "скв. $(v)")
         #for i in v[2:end]
             lineplot!(plt[k], P_lr[v,:], name = "calc")
+        #end
+    end
+    grid(panel.(plt); layout=(3, nothing)) |> print
+end
+
+
+function plot_P_lr_ex(PM, P_lr, P_ex, nw)
+    plt = Vector(undef, Int64(ceil(nw)))
+    for (k,v) in enumerate(1:nw)
+        x_ex = size(PM,2) - size(P_ex, 2) +1 : size(PM,2)
+        plt[v] = lineplot(PM[v,:], ylim = [floor(minimum(PM)),ceil(maximum(PM))],
+                name = "fact", ylabel = "P", title = "скв. $(v)")
+        #for i in v[2:end]
+            lineplot!(plt[k], P_lr[v,:], name = "calc")
+            lineplot!(plt[k], x_ex, P_ex[v,:], name = "exam")
         #end
     end
     grid(panel.(plt); layout=(3, nothing)) |> print

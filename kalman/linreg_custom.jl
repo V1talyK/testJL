@@ -23,13 +23,14 @@ BB = x'*y1
 
 AA\BB
 
-iw = 1
 yy2, aa = two_step(qw, PM) #Прокси
 yy2, aa = two_step(qw, ppl2) #Полноценная
 
-plt = lineplot(yy2[iw,:])
-    lineplot!(plt,ppl2[iw,:])
+iw = 2
+    plt = lineplot(yy2[iw,:])
+    lineplot!(plt,PM[iw,:])
     println(plt)
+    println(lf(PM[iw,:],yy2[iw,:])," ",round(mape(PM[iw,:],yy2[iw,:]), digits=3))
 
 plot_P_lr(ppl2, yy2, 9)
 
@@ -75,3 +76,24 @@ iw = 2
         lineplot!(plt,PM[iw,:])
         println(plt)
     end
+
+#Прогнозные свойства
+yy2, aa = two_step(qw[:,1:22], ppl2[:,1:22]) #Полноценная
+
+cqw = cumsum(qw,dims=2)
+uqw = vcat(qw, cqw)
+yy2, aa = two_step(uqw[:,1:22], ppl2[:,1:22]) #Полноценная
+
+yy_p = aa'*vcat(qw[:,23:33],ones(1,11))
+yy_p = aa'*vcat(uqw[:,23:33],ones(1,11))
+
+mape(ppl2[:,23:33],yy_p)
+
+
+for iw = 1:9
+    plt = lineplot(ppl2[iw,23:33], ylim = [floor(minimum(ppl2)),ceil(maximum(ppl2))])
+    lineplot!(plt,yy_p[iw,:])
+    println(plt)
+end
+
+plot_P_lr_ex(ppl2, yy2, yy_p,  nw)
