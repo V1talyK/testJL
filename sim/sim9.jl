@@ -480,6 +480,7 @@ end
 
 mape(xf,xc) = mean(abs,filter(!isnan,(xf.-xc)./xf))
 lf(xf,xc) = sum(abs2,filter(!isnan,xf.-xc))
+mse(xf,xc) = mean(abs2,filter(!isnan,xf.-xc))
 
 function calc_d2J_dV2(nw, dP_dVp, PM, PM0,d2P_dVp2)
     d2J_dV2 = zeros(nw, nw)
