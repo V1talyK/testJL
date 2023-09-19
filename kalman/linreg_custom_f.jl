@@ -1,5 +1,3 @@
-
-
 function two_step(qw, Pf)
     yy1, aa = mnk_step1(qw, Pf)
     println("1st step MASE: ", round(mean(abs2,Pf.-yy1),digits=3)," MAPE: ", round(mape(Pf,yy1), digits=3))
@@ -13,6 +11,9 @@ function mnk_step1(xx, yy)
     nn2 = size(yy,1)
     xx = vcat(xx,ones(1,size(xx,2)))
     AA = xx*xx'
+    println("ранг1: ",rank(AA))
+    #ev = eigvals(AA)
+    #println(ev," ",extrema(ev))
     aa = zeros(nn1+1,nn2)
     for i=1:nn2
         BB = xx*yy[i,:]
@@ -23,9 +24,10 @@ function mnk_step1(xx, yy)
 end
 
 function mnk_step2(xx, yy1, yy, aa)
+    nx = size(xx,1)
     nn = size(yy1,1)
     xx = vcat(xx,ones(1,size(xx,2)))
-    bb = zeros(nn-1+nn+1,nn)
+    bb = zeros(nx-1+nn+1,nn)
     yyr = similar(yy)
     for i = 1:nn
         PT = copy(yy1)
@@ -34,7 +36,7 @@ function mnk_step2(xx, yy1, yy, aa)
         AA = PT*PT'
         BB = PT*yy[i,:]
         bb[:,i] = AA\BB
-
+        println("ранг2: ",rank(AA))
         yyr[i,:] = bb[:,i]'*PT #+ aa[:,i]'*xx
     end
     return yyr
