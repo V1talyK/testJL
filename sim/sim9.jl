@@ -363,32 +363,95 @@ function calc_Δprm(PM, oP, oT, oV, dP_dT, dP_dVp, d2P_dT2, d2P_dVp2)
 
     d2J_dV2 = calc_d2J_dV2(nw, dP_dVp, PM, PM0, d2P_dVp2)
     d2J_dT2 = calc_d2J_dV2(nw, dP_dT, PM, PM0, d2P_dT2)
-
-    dPT = zeros(nw, nt)
-    d2PT = zeros(nw, nt)
-    for i = 1:nw
-        #for j = 1:nw
-        d2PT[i,:] = getindex.(getindex.(d2P_dVp2,i),i,i)
-        dPT[i,:] = getindex.(dP_dVp,i,i)
-        #end
+    println("d2J_dT2: ",d2J_dT2)
+    Cx = inv(d2J_dT2)
+    println("d2J_dT2: ",size(Cx))
+    AA = vcat(dP_dT...)
+    Cy = AA*Cx*AA'
+    println("Cy: ",size(Cy))
+    println("Cy: ",round.(Cy[1:298:end], digits=2))
+    JJ = 0.0
+    for i=1:297
+        for j = 1:297
+            JJ+=Cy[i,j]*(PM[i] - PM0[i])*(PM[j] - PM0[j])
+        end
     end
-    #H0,x0,dJ_dx,d2PT,dPT,p,pf,nt = d2J_dV2,eVp,dJ_dV,d2PT,dP_dVp,PM,PM0,nt
-    ΔVp = calc_Δx(d2J_dV2,oV,dJ_dV,d2PT,dPT,PM,PM0,nt; lbl = "V±ΔV")
-
-    for i = 1:nw
-        #for j = 1:nw
-        d2PT[i,:] = getindex.(getindex.(d2P_dT2,i),i,i)
-        dPT[i,:] = getindex.(dP_dT,i,i)
-        #end
+    Sp = mean(abs2, PM.-PM0,dims=2)[:]
+    cP = cor(PM.-PM0,dims=2)
+    JJ1 = 0.0
+    for i = 1:9
+        for j = 1:9
+            JJ1+=cP[i,j]*Sp[i]*Sp[j]
+        end
     end
-    println(dJ_dT)
-    ΔT = calc_Δx(d2J_dT2,oT,dJ_dT,d2PT,dPT,PM,PM0,nt; lbl = "T±ΔT")
+    println("JJ=",JJ)
+    println("JJ1=",JJ1)
+    #ΔVp = calc_Δx(d2J_dV2,oV,dJ_dV,d2P_dVp2,dP_dVp,PM,PM0,nt; lbl = "V±ΔV")
+    ΔVp = 1.0
+    ΔT = calc_Δx(d2J_dT2,oT,dJ_dT,d2P_dT2,dP_dT,PM,PM0,nt; lbl = "T±ΔT")
 
     return ΔVp, ΔT
 end
 
+function calc_Δx(H0,x0,dJ_dx,d2P_dU2,dP_dU,Pf,Pc,nt; lbl = "x±Δx")
+    nw, nt = size(Pf)
+    N = count(.!isnan.(Pf.-Pc))
+    du_dp = zeros(nw,length(Pf))
+    inx = collect(Iterators.product(1:nw,1:nt))[:]
+    LI = LinearIndices((1:nw,1:nt))
 
-function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,pf,p,nt; lbl = "x±Δx")
+    Jf = sum(abs2,filter(!isnan,Pf.-Pc))/(N-nw)
+
+    Sp = sqrt.(sum(abs2, Pf.-Pc, dims=2)[:]./(33-nw))
+    cP = cor(Pf.-Pc, dims=2)
+    JJ1 = 0.0
+    for i = 1:9
+        for j = 1:9
+            JJ1+=cP[i,j]*Sp[i]*Sp[j]
+        end
+    end
+    println("JJ1=",JJ1)
+    println("Jf=",Jf)
+    Jf = JJ1
+    for iw = 1:nw
+        for iw2 = 1:nw
+            for t = 1:nt
+                ip = LI[iw2, t]
+                z1 = 0.0
+                z2 = 0.0
+                for t1 = 1:nt
+                    for ii = 1:nw
+                        for jj = 1:nw
+                            z1 += dP_dU[t1][ii,iw]*dP_dU[t1][ii,jj]
+                            z2 += (Pf[ii,t1].-Pc[ii,t1])*d2P_dU2[t1][jj][ii,iw]
+                        end
+                    end
+                end
+                du_dp[iw, ip] = sum(dP_dU[t][iw2,:])/(-z1 - z2)
+            end
+        end
+    end
+
+    N = count(.!isnan.(Pf))
+
+    Sx = sqrt.(sum(du_dp.^2, dims=2)[:])
+    Sxs = sqrt(Jf).*Sx
+    Sxs2 = 1
+    dP = Pf[:].-Pc[:]
+    #Sxs = sqrt.(sum((du_dp.*dP').^2, dims=2)[:])
+
+    #tp = ifelse(N==6,2.57,2.2)
+    tp = quantile(TDist(N-9),0.975)
+    Δx = tp*Sxs
+
+    println(lbl)
+    for (k,v) in enumerate(zip(x0,Δx))
+        println("$k: $(round(v[1],digits=3))±$(round(v[2],digits=3)), $(round(v[2]/v[1]*100,digits=2))%")
+    end
+    return Δx
+end
+
+function _calc_Δx(H0,x0,dJ_dx,d2PT,dPT,pf,p,nt; lbl = "x±Δx")
     x = H0\(H0*x0.-dJ_dx)
     println(lbl,"  ",round.(x, digits = 5), " ", round.(x0, digits = 5))
     d2P_dx2 = d2PT'
@@ -400,6 +463,7 @@ function calc_Δx(H0,x0,dJ_dx,d2PT,dPT,pf,p,nt; lbl = "x±Δx")
 
     dx_dp = H0\(dH_dp*(x0-x)-dJx_dp)
     dx_dp = -2*sum(pf.-p)./dJ_dx
+    #dx_dp = -dPT./(- dPT.*dPT + (pf - p)*d2P_dx2)
     Sx = sqrt.(dx_dp.^2 .*Jf)
     Sxs = Sx./sqrt(nt)
 
@@ -416,6 +480,7 @@ end
 
 mape(xf,xc) = mean(abs,filter(!isnan,(xf.-xc)./xf))
 lf(xf,xc) = sum(abs2,filter(!isnan,xf.-xc))
+mse(xf,xc) = mean(abs2,filter(!isnan,xf.-xc))
 
 function calc_d2J_dV2(nw, dP_dVp, PM, PM0,d2P_dVp2)
     d2J_dV2 = zeros(nw, nw)
