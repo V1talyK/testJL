@@ -51,7 +51,7 @@ Y_miss = predict(M, xxe)
 
 Y_fact*Δppl[1:tgap-1]
 
-sd = (Y_fact*Y_fact')\(Y_fact*ppl[1:tgap])
+sd = (Y_fact*Y_fact')\(Y_fact*Δppl[1:tgap])
 
 (sd'*Y_miss)'
-pplc[tgap+1:end] = pplc[tgap] .+ cumsum((sd'*Y_miss)')
+pplc[tgap:end] = pplc[tgap] .+ cumsum((sd'*Y_miss)')
