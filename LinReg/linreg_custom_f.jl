@@ -13,7 +13,7 @@ function mnk_step1(xx, yy; critical_value = 0.95)
     xx = vcat(xx,ones(1,size(xx,2)))
     AA = xx*xx'
     rnk = rank(AA)
-    println("ранг1: ",rnk)
+    #println("ранг1: ",rnk)
     wrn_flag = rnk!=nn1+1
     #ev = eigvals(AA)
     #println(ev," ",extrema(ev))
@@ -54,7 +54,7 @@ function mnk_step2(xx, yy1, yy, aa)
         AA = PT*PT'
         BB = PT*yy[i,:]
         bb[:,i] = AA\BB
-        println("ранг2: ",rank(AA))
+        #println("ранг2: ",rank(AA))
         yyr[i,:] = bb[:,i]'*PT #+ aa[:,i]'*xx
     end
     return yyr
@@ -87,5 +87,5 @@ function calc_rank_of_data(xx, fact_i)
     MR[n+1,1:n].=sum(view(xx,:,fact_i),dims=2)
     MR[1:n,n+1].=MR[n+1,1:n]
     MR[n+1,n+1] = 1
-    return rank(MR)
+    return rank(MR), eigvals(MR), cond(MR)
 end
