@@ -51,6 +51,7 @@ function sim(qw, nt, AA, bb, P0, eVp, dTc, dTr, r, c, lam, bi, d2T)
     d2P_dT2 = Vector(undef, nt)
     dP_dT = Vector(undef, nt)
     p0 = copy(P0)
+    Pa = mean(P0)
     dP_dVp0 = zeros(length(eVp),length(eVp))
     dP_dT0 = zeros(length(eVp),length(eVp))
     d2P_dVp20 = [zeros(length(eVp),length(eVp)) for _ in 1:length(eVp)]
