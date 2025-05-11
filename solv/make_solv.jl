@@ -1,10 +1,10 @@
-using LinearAlgebra, BenchmarkTools
-LinearAlgebra.BLAS.set_num_threads(4)
+using LinearAlgebra, BenchmarkTools, SuiteSparse
+LinearAlgebra.BLAS.set_num_threads(1)
 
 ACL = cholesky(mA);
 ALU = lu(mA)
 
-@btime x0 = ACL\b
+@btime x0 = ACL\b;
 
 @btime L = ACL.L;
 @btime LL = LowerTriangular(sparse(L))
@@ -32,7 +32,7 @@ end
 
 LinearAlgebra.BLAS.trsv('L', 'N', 'N', LL, bp)
 
-LinearAlgebra.BLAS.set_num_threads(2)
+LinearAlgebra.BLAS.set_num_threads(1)
 
 @profiler ldiv!(y, LL,bp)
 
@@ -76,3 +76,11 @@ x = zeros(length(b))
 LL = LowerTriangular(sparse(ALU.L))
 UU = LowerTriangular(sparse(ALU.U))
 @btime ldiv!(x, UU, b)
+
+CL = make_CL_in_julia(ACL, 1)
+x1 = similar(b)
+@btime back_slash_slvr!($x1, $CL, $b);
+
+using ProfileView
+using Profile
+VSCodeServer.@profview back_slash_slvr!(x1, CL, b);
