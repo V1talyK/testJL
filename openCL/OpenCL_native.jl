@@ -1,6 +1,7 @@
 using OpenCL, pocl_jll
-
-dims = (2,)
+OpenCL.versioninfo()
+1+1
+dims = (2000000,)
 a = round.(rand(Float32, dims) * 100)
 b = round.(rand(Float32, dims) * 100)
 c = similar(a)
@@ -15,5 +16,14 @@ function vadd(a, b, c)
     return
 end
 
+function vadd0(a, b, c)
+    for i in eachindex(a)
+    @inbounds c[i] = a[i] + b[i]
+    end
+    return nothing
+end
+
 len = prod(dims)
-@opencl global_size=len vadd(d_a, d_b, d_c)
+@opencl global_size=len vadd(d_a, d_b, d_c);
+@btime @opencl global_size=len vadd($d_a, $d_b, $d_c);
+@btime vadd0($a, $b, $c);
