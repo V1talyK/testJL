@@ -76,7 +76,20 @@ function qvazi_ppl(nx, nt, qq, pbnd)
     C20 = zeros(5)
     FF = zeros(nt)
     FF = -sum(vcat(pbnd[1,:]', diff(pbnd, dims=1)), dims=2)[:]./2 + 1000/4*vcat(qq[1], diff(qq))/10
-    omega2 = (pi*collect(1:5)/(500/a + 500/a))
+
+    S1 = a./omega.*(1.0 .-cos.(omega.*500 ./a))
+    F1 = vcat(pbnd[1,1],diff(pbnd[:,1]))*S1
+
+    S2 = a./omega.*(1.0 .-cos.(omega.*500 ./a))
+    F2 = vcat(pbnd[1,2],diff(pbnd[:,2]))*S2
+
+    S3 = a./omega.*(500 .- a./omega .* sin.(omega.*500 ./a))
+    F3 = vcat(pbnd[1,1],diff(pbnd[:,1]))*S3
+
+    Nk = 
+    FF = - (F1+F2+F3)/Nk
+    omega = (pi*collect(1:5)/(500/a + 500/a))
+    omega2 = omega.^2
     for t = 1:nt
         for i=1:5
             C1[i,t] = (C10[i]+FF[t])/(1+omega2[i])
@@ -85,7 +98,7 @@ function qvazi_ppl(nx, nt, qq, pbnd)
             C20[i] = C2[i, t]
         end
     end
-    fk = sin.(sqrt.(omega2.*500/a)).* sin.(sqrt.(omega2.*500/a))
+    fk = sin.(omega.*500/a).* sin.(omega.*500/a)
     for t = 1:nt
         tmp = sum(C1[:,t].*fk + C2[:,t].*fk)
         pql[t] = (pbnd[t,1]*lam1 + pbnd[t,2]*lam2 - qq[t])/(lam1+lam2) + tmp
